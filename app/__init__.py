@@ -16,6 +16,9 @@ def create_app(config_class=Config):
     # 4. Registrar Blueprints (Rutas)
     from app.routes.main import main_bp
     app.register_blueprint(main_bp)
+    
+    from app.routes.finanzas import finanzas_bp
+    app.register_blueprint(finanzas_bp)
 
     # 5. Shell Context (Opcional)
     # Permite que al usar 'flask shell' ya tengas 'db' y 'app' importados

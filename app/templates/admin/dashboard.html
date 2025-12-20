@@ -5,51 +5,73 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
-        <h2 class="fw-bold text-secondary">Panel de Control Batan3</h2>
-        <p class="text-muted">Estado financiero y operativo del edificio.</p>
+        <h2 class="fw-bold text-secondary">Resumen Financiero</h2>
+        <p class="text-muted">Estado de situación actual.</p>
     </div>
 </div>
 
-<h5 class="mb-3 text-secondary"><i class="fa-solid fa-sack-dollar"></i> Tesorería y Cuentas</h5>
-<div class="row g-4 mb-5">
-    
+<h5 class="mb-3 text-secondary border-bottom pb-2">
+    <i class="fa-solid fa-wallet"></i> Disponibilidad Inmediata (Tesorería)
+</h5>
+<div class="row g-4 mb-4">
     {% for cuenta in cuentas %}
-    <div class="col-md-4">
-        <div class="card card-dashboard h-100 border-start border-4 {% if cuenta.tipo == 'BANCO' %}border-primary{% else %}border-success{% endif %}">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted text-uppercase mb-1 small">{{ cuenta.nombre }}</h6>
-                        <h3 class="fw-bold {% if cuenta.tipo == 'BANCO' %}text-primary{% else %}text-success{% endif %}">
-                            ${{ "%.2f"|format(cuenta.saldo) }}
-                        </h3>
-                        <span class="badge bg-light text-dark border">{{ cuenta.tipo }}</span>
-                    </div>
-                    <div class="fs-1 opacity-25 {% if cuenta.tipo == 'BANCO' %}text-primary{% else %}text-success{% endif %}">
-                        {% if cuenta.tipo == 'BANCO' %}
-                            <i class="fa-solid fa-building-columns"></i>
-                        {% else %}
-                            <i class="fa-solid fa-money-bill-wave"></i>
-                        {% endif %}
-                    </div>
-                </div>
+    <div class="col-md-4"> <div class="card card-dashboard h-100 border-start border-4 border-primary shadow-sm">
+            <div class="card-body p-3">
+                <h6 class="text-muted small text-uppercase fw-bold mb-2">{{ cuenta.nombre }}</h6>
+                <h4 class="fw-bold text-primary mb-0">${{ "%.2f"|format(cuenta.saldo) }}</h4>
+                <small class="text-muted">{{ cuenta.tipo }}</small>
             </div>
         </div>
     </div>
     {% endfor %}
 
     <div class="col-md-4">
-        <div class="card card-dashboard h-100 bg-secondary text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50 text-uppercase mb-1">Patrimonio Total</h6>
-                        <h2 class="fw-bold text-white">${{ "%.2f"|format(saldo_total) }}</h2>
-                    </div>
-                    <div class="fs-1 text-white opacity-50">
-                        <i class="fa-solid fa-scale-balanced"></i>
-                    </div>
-                </div>
+        <div class="card card-dashboard h-100 bg-primary text-white shadow-sm">
+            <div class="card-body p-3">
+                <h6 class="text-white-50 small text-uppercase fw-bold mb-2">Total Efectivo</h6>
+                <h4 class="fw-bold text-white mb-0">${{ "%.2f"|format(saldo_disponible) }}</h4>
+                <small class="text-white-50"><i class="fa-solid fa-check-circle"></i> Líquido</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h5 class="mb-3 text-secondary border-bottom pb-2">
+    <i class="fa-solid fa-chart-pie"></i> Salud Financiera
+</h5>
+<div class="row g-4 mb-5">
+    
+    <div class="col-md-4">
+        <div class="card card-dashboard h-100 border-danger border-2 bg-danger bg-opacity-10">
+            <div class="card-body text-center">
+                <div class="text-danger mb-2"><i class="fa-solid fa-file-invoice-dollar fa-3x"></i></div>
+                <h5 class="text-danger fw-bold">Cuentas por Pagar</h5>
+                <h2 class="fw-bold text-danger mb-0">${{ "%.2f"|format(deuda_por_pagar) }}</h2>
+                <small class="text-danger">Facturas/Sueldos pendientes</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card card-dashboard h-100 border-warning border-2">
+            <div class="card-body text-center">
+                <div class="text-warning mb-2"><i class="fa-solid fa-hand-holding-dollar fa-3x"></i></div>
+                <h5 class="text-warning fw-bold">Por Cobrar</h5>
+                <h2 class="fw-bold text-warning mb-0">${{ "%.2f"|format(por_cobrar) }}</h2>
+                <small class="text-muted">Expensas vencidas</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card card-dashboard h-100 bg-dark text-white">
+            <div class="card-body text-center">
+                <div class="mb-2"><i class="fa-solid fa-scale-balanced fa-3x"></i></div>
+                <h5 class="text-white fw-bold">Balance Real</h5>
+                <h2 class="fw-bold {% if balance_real < 0 %}text-danger{% else %}text-success{% endif %} mb-0">
+                    ${{ "%.2f"|format(balance_real) }}
+                </h2>
+                <small class="text-white-50">Patrimonio Neto</small>
             </div>
         </div>
     </div>
@@ -58,12 +80,12 @@
 <h5 class="mb-3 text-secondary"><i class="fa-solid fa-bolt"></i> Acciones</h5>
 <div class="row mb-5">
     <div class="col-md-3 mb-2">
-        <a href="#" class="btn btn-outline-primary w-100 py-3 shadow-sm">
+        <a href="{{ url_for('finanzas.nuevo_ingreso') }}" class="btn btn-outline-primary w-100 py-3 shadow-sm">
             <i class="fa-solid fa-circle-plus fa-2x mb-2"></i><br>Ingreso (Expensa)
         </a>
     </div>
     <div class="col-md-3 mb-2">
-        <a href="#" class="btn btn-outline-danger w-100 py-3 shadow-sm">
+        <a href="{{ url_for('finanzas.nuevo_gasto') }}" class="btn btn-outline-danger w-100 py-3 shadow-sm">
             <i class="fa-solid fa-circle-minus fa-2x mb-2"></i><br>Gasto (Pago)
         </a>
     </div>

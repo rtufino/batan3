@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Gasto{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="fa-solid fa-file-invoice-dollar"></i> Registrar Gasto</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Proveedor / Beneficiario</label>
+                        {{ form.proveedor_id(class="form-select form-select-lg") }}
+                        <div class="form-text">¿A quién le estamos pagando?</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Concepto</label>
+                            {{ form.rubro_id(class="form-select") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cuenta de Origen</label>
+                            {{ form.cuenta_id(class="form-select") }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Monto ($)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.monto(class="form-control", placeholder="0.00") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Estado</label>
+                            {{ form.estado(class="form-select fw-bold text-danger") }}
+                            <div class="form-text">Si seleccionas "Por Pagar", se sumará a la deuda.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Fecha</label>
+                        {{ form.fecha(class="form-control", type="date") }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Notas / Factura #</label>
+                        {{ form.descripcion(class="form-control", placeholder="Ej: Factura #9988 por arreglos") }}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-danger btn-lg") }}
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -45,6 +45,7 @@ class Cuenta(db.Model):
     tipo = db.Column(db.String(20), nullable=False)    # 'BANCO' o 'EFECTIVO'
     numero = db.Column(db.String(50), nullable=True)   # Para número de cuenta bancaria
     saldo_inicial = db.Column(db.Float, default=0.0)   # Saldo al arrancar el sistema
+    saldo = db.Column(db.Float, default=0.0)           # Saldo de la cuenta 
     
     # Relación para saber qué movimientos afectaron esta cuenta
     movimientos = db.relationship('Movimiento', backref='cuenta', lazy=True)
@@ -158,6 +159,11 @@ class Movimiento(db.Model):
     
     # NUEVO: ¿Es una transferencia interna entre cuentas?
     es_transferencia = db.Column(db.Boolean, default=False)
+
+    # NUEVO CAMPO: Estado del pago
+    # 'PAGADO': El dinero ya se movió de la cuenta (afecta saldo real).
+    # 'PENDIENTE': Es una deuda o cuenta por cobrar (NO afecta saldo real, pero sí el balance).
+    estado = db.Column(db.String(20), nullable=False, default='PAGADO')
 
     # Relaciones
     rubro_id = db.Column(db.Integer, db.ForeignKey('rubro.id'), nullable=False)
