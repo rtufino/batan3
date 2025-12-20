@@ -67,3 +67,32 @@ class EquipoForm(FlaskForm):
     fecha_instalacion = DateField('Fecha Instalación (Aprox)', format='%Y-%m-%d', validators=[Optional()])
     
     submit = SubmitField('Guardar Equipo')
+
+class DepartamentoForm(FlaskForm):
+    numero = StringField('Número de Departamento', validators=[DataRequired()])
+    piso = DecimalField('Piso', validators=[DataRequired()])
+    alicuota = DecimalField('Porcentaje de Alícuota (%)', places=4, validators=[DataRequired()])
+    valor_expensa = DecimalField('Valor de Expensa Mensual ($)', places=2, validators=[DataRequired()])
+    esta_arrendado = SelectField('Estado de Ocupación', choices=[
+        (False, 'Habitado por Propietario'), 
+        (True, 'Arrendado')
+    ], coerce=lambda x: str(x) == 'True')
+    responsable_pago = SelectField('Responsable del Pago', choices=[
+        ('PROPIETARIO', 'Propietario'),
+        ('ARRENDATARIO', 'Arrendatario')
+    ])
+    submit = SubmitField('Actualizar Departamento')
+
+class PersonaContactoForm(FlaskForm):
+    nombre = StringField('Nombre Completo', validators=[DataRequired()])
+    email = StringField('Correo Electrónico', validators=[DataRequired()])
+    telefono = StringField('Teléfono/WhatsApp')
+    rol = SelectField('Rol', choices=[
+        ('PROPIETARIO', 'Propietario'),
+        ('ARRENDATARIO', 'Arrendatario')
+    ])
+    recibe_notificaciones = SelectField('¿Recibe Notificaciones?', choices=[
+        (True, 'Sí'),
+        (False, 'No')
+    ], coerce=lambda x: str(x) == 'True')
+    submit = SubmitField('Guardar Contacto')

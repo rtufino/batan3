@@ -62,27 +62,30 @@ class Departamento(db.Model):
     numero = db.Column(db.String(10), unique=True, nullable=False) # Ej: "201"
     piso = db.Column(db.Integer, nullable=False)
     alicuota = db.Column(db.Float, nullable=False, default=0.0) # Porcentaje de participación
-    
+    esta_arrendado = db.Column(db.Boolean, default=False)
+    responsable_pago = db.Column(db.String(20), default='PROPIETARIO')
+    valor_expensa = db.Column(db.Float, nullable=False, default=0.0) # Valor monetario fijo
+
+
     # Relaciones
-    propietarios = db.relationship('Propietario', backref='departamento', lazy=True)
+    personas = db.relationship('PersonaContacto', backref='departamento', lazy=True)
     pagos = db.relationship('Movimiento', backref='departamento', lazy=True)
 
     def __repr__(self):
         return f'<Depto {self.numero}>'
 
-class Propietario(db.Model):
-    __tablename__ = 'propietario'
-
+class PersonaContacto(db.Model): 
+    __tablename__ = 'persona_contacto'
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), nullable=True) # Clave para enviar recibos
+    email = db.Column(db.String(120), nullable=False)
     telefono = db.Column(db.String(20), nullable=True)
-    es_inquilino = db.Column(db.Boolean, default=False)
+    
+    # ROLES: 'PROPIETARIO' o 'ARRENDATARIO'
+    rol = db.Column(db.String(20), nullable=False, default='PROPIETARIO')
+    recibe_notificaciones = db.Column(db.Boolean, default=True)
     
     departamento_id = db.Column(db.Integer, db.ForeignKey('departamento.id'), nullable=False)
-
-    def __repr__(self):
-        return f'<Propietario {self.nombre}>'
 
 class Proveedor(db.Model):
     """

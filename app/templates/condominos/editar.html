@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Datos del Inmueble {{ depto.numero }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">{{ form.valor_expensa.label }} {{ form.valor_expensa(class="form-control") }}</div>
+                    <div class="row">
+                        <div class="col-6 mb-3">{{ form.alicuota.label }} {{ form.alicuota(class="form-control") }}</div>
+                        <div class="col-6 mb-3">{{ form.piso.label }} {{ form.piso(class="form-control") }}</div>
+                    </div>
+                    <div class="mb-3">{{ form.esta_arrendado.label }} {{ form.esta_arrendado(class="form-select") }}</div>
+                    <div class="mb-3">{{ form.responsable_pago.label }} {{ form.responsable_pago(class="form-select") }}</div>
+                    <button type="submit" class="btn btn-primary w-100">Actualizar Departamento</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Personas Relacionadas</h5>
+                <a href="{{ url_for('condominos.gestionar_persona', depto_id=depto.id) }}" class="btn btn-sm btn-light">
+                    <i class="fa-solid fa-plus"></i> Agregar
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Rol</th>
+                            <th>Notif.</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in depto.personas %}
+                        <tr>
+                            <td>{{ p.nombre }}<br><small class="text-muted">{{ p.email }}</small></td>
+                            <td><span class="badge bg-info text-dark">{{ p.rol }}</span></td>
+                            <td>{% if p.recibe_notificaciones %}<i class="fa-solid fa-bell text-success"></i>{% else %}<i class="fa-solid fa-bell-slash text-muted"></i>{% endif %}</td>
+                            <td>
+                                <a href="{{ url_for('condominos.gestionar_persona', persona_id=p.id) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fa-solid fa-pen"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

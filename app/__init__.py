@@ -23,6 +23,9 @@ def create_app(config_class=Config):
     from app.routes.mantenimiento import mantenimiento_bp
     app.register_blueprint(mantenimiento_bp)
 
+    from app.routes.condominos import condominos_bp
+    app.register_blueprint(condominos_bp)
+
     # 5. Shell Context (Opcional)
     # Permite que al usar 'flask shell' ya tengas 'db' y 'app' importados
     @app.shell_context_processor
