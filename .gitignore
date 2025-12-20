@@ -6,3 +6,4 @@ instance/
 .DS_Store
 *.db
 *.sqlite3
+seed.py

@@ -33,6 +33,24 @@ class Rubro(db.Model):
 
     def __repr__(self):
         return f'<{self.nombre} ({self.tipo})>'
+    
+class Cuenta(db.Model):
+    """
+    NUEVA ENTIDAD: Representa dónde está el dinero.
+    Ej: Caja Chica (Efectivo), Cuenta Bancaria.
+    """
+    __tablename__ = 'cuenta'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False) # Ej: "Banco Pichincha", "Caja Fuerte"
+    tipo = db.Column(db.String(20), nullable=False)    # 'BANCO' o 'EFECTIVO'
+    numero = db.Column(db.String(50), nullable=True)   # Para número de cuenta bancaria
+    saldo_inicial = db.Column(db.Float, default=0.0)   # Saldo al arrancar el sistema
+    
+    # Relación para saber qué movimientos afectaron esta cuenta
+    movimientos = db.relationship('Movimiento', backref='cuenta', lazy=True)
+
+    def __repr__(self):
+        return f'<Cuenta {self.nombre}>'
 
 # --- 2. INMUEBLE Y PERSONAS ---
 
@@ -131,23 +149,23 @@ class Movimiento(db.Model):
     Tabla central de contabilidad. Registra TODO el dinero que entra y sale.
     """
     __tablename__ = 'movimiento'
-
     id = db.Column(db.Integer, primary_key=True)
-    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha = db.Column(db.DateTime, default=datetime.now)
     tipo = db.Column(db.String(10), nullable=False) # 'INGRESO' o 'EGRESO'
     monto = db.Column(db.Float, nullable=False)
-    descripcion = db.Column(db.String(200), nullable=True) # Detalle extra
+    descripcion = db.Column(db.String(200), nullable=True)
+    comprobante_url = db.Column(db.String(200), nullable=True)
     
-    comprobante_url = db.Column(db.String(200), nullable=True) # PDF o Foto Recibo
-    
-    # Clasificación
+    # NUEVO: ¿Es una transferencia interna entre cuentas?
+    es_transferencia = db.Column(db.Boolean, default=False)
+
+    # Relaciones
     rubro_id = db.Column(db.Integer, db.ForeignKey('rubro.id'), nullable=False)
-    
-    # Si es INGRESO (Cobro de expensa), viene de un departamento
     departamento_id = db.Column(db.Integer, db.ForeignKey('departamento.id'), nullable=True)
-    
-    # Si es EGRESO (Gasto), va a un proveedor o empleado
     proveedor_id = db.Column(db.Integer, db.ForeignKey('proveedor.id'), nullable=True)
+    
+    # NUEVO: Relación con la Cuenta (Caja o Banco)
+    cuenta_id = db.Column(db.Integer, db.ForeignKey('cuenta.id'), nullable=False)
 
     def __repr__(self):
         return f'<{self.tipo} ${self.monto} - {self.fecha.date()}>'
