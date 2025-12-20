@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Historial {{ equipo.nombre }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('mantenimiento.inventario') }}">Equipos</a></li>
+    <li class="breadcrumb-item active">{{ equipo.nombre }}</li>
+  </ol>
+</nav>
+
+<h3 class="mb-4">Bitácora: {{ equipo.nombre }} <small class="text-muted fs-6">({{ equipo.ubicacion }})</small></h3>
+
+<div class="timeline">
+    {% if not historial %}
+        <div class="alert alert-info">No hay mantenimientos registrados aún para este equipo.</div>
+    {% endif %}
+
+    {% for log in historial %}
+    <div class="card mb-3 shadow-sm border-start border-4 border-info">
+        <div class="card-body">
+            <div class="d-flex justify-content-between">
+                <h5 class="card-title fw-bold">{{ log.fecha.strftime('%d de %B, %Y') }}</h5>
+                <span class="badge bg-light text-dark border">Costo Ref: ${{ log.costo_referencial }}</span>
+            </div>
+            <p class="card-text">{{ log.descripcion }}</p>
+            
+            <div class="d-flex gap-3 mt-3">
+                {% if log.foto_antes %}
+                <div class="text-center">
+                    <span class="badge bg-danger mb-1">Antes</span><br>
+                    <img src="{{ url_for('static', filename='uploads/mantenimiento/' + log.foto_antes) }}" class="img-thumbnail" style="height: 150px;">
+                </div>
+                {% endif %}
+
+                {% if log.foto_despues %}
+                <div class="text-center">
+                    <span class="badge bg-success mb-1">Después</span><br>
+                    <img src="{{ url_for('static', filename='uploads/mantenimiento/' + log.foto_despues) }}" class="img-thumbnail" style="height: 150px;">
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

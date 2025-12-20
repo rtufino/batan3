@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Nuevo Mantenimiento{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Registrar Intervención Técnica</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label class="fw-bold">Equipo / Activo</label>
+                        {{ form.equipo_id(class="form-select form-select-lg") }}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Fecha</label>
+                            {{ form.fecha(class="form-control", type="date") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Costo Referencial ($)</label>
+                            {{ form.costo_referencial(class="form-control") }}
+                            <div class="form-text small">Solo informativo. Registre el pago real en Finanzas.</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Descripción del trabajo realizado</label>
+                        {{ form.descripcion(class="form-control", rows="3") }}
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold"><i class="fa-solid fa-camera"></i> Foto Antes</label>
+                            {{ form.foto_antes(class="form-control") }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold"><i class="fa-solid fa-camera"></i> Foto Después</label>
+                            {{ form.foto_despues(class="form-control") }}
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

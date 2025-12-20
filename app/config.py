@@ -17,3 +17,7 @@ class Config:
 
     # Configuración opcional para mostrar SQL en consola (útil para debug)
     # SQLALCHEMY_ECHO = True
+
+    # Se guardarán en app/static/uploads/mantenimiento
+    UPLOAD_FOLDER = os.path.join(basedir, 'static/uploads/mantenimiento')
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # Límite de 16MB por subida para seguridad

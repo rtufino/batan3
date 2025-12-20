@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Inventario de Equipos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-secondary"><i class="fa-solid fa-screwdriver-wrench"></i> Gestión de Mantenimiento</h2>
+    <a href="{{ url_for('mantenimiento.nuevo_registro') }}" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> Registrar Mantenimiento
+    </a>
+</div>
+
+<div class="row g-4">
+    {% for equipo in equipos %}
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm hover-effect">
+            <div class="card-body">
+                <h5 class="card-title fw-bold text-primary">{{ equipo.nombre }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted"><i class="fa-solid fa-location-dot"></i> {{ equipo.ubicacion }}</h6>
+                <p class="card-text small">{{ equipo.descripcion }}</p>
+                <hr>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-secondary">{{ equipo.mantenimientos|length }} Intervenciones</span>
+                    <a href="{{ url_for('mantenimiento.detalle_equipo', id=equipo.id) }}" class="btn btn-sm btn-outline-primary">Ver Historial</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
