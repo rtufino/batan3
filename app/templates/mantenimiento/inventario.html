@@ -3,26 +3,66 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="text-secondary"><i class="fa-solid fa-screwdriver-wrench"></i> Gestión de Mantenimiento</h2>
-    <a href="{{ url_for('mantenimiento.nuevo_registro') }}" class="btn btn-primary">
-        <i class="fa-solid fa-plus"></i> Registrar Mantenimiento
-    </a>
+    <h2 class="text-secondary"><i class="fa-solid fa-screwdriver-wrench"></i> Inventario de Activos</h2>
+    <div>
+        <a href="{{ url_for('mantenimiento.nuevo_registro') }}" class="btn btn-outline-primary me-2">
+            <i class="fa-solid fa-clipboard-check"></i> Registrar Mantenimiento
+        </a>
+        <a href="{{ url_for('mantenimiento.crear_equipo') }}" class="btn btn-secondary">
+            <i class="fa-solid fa-plus"></i> Nuevo Equipo
+        </a>
+    </div>
 </div>
+
+{% if not equipos %}
+    <div class="alert alert-info text-center py-5">
+        <h4><i class="fa-solid fa-box-open"></i> No hay equipos activos</h4>
+        <p>Registra nuevos equipos para comenzar a gestionar el mantenimiento.</p>
+    </div>
+{% endif %}
 
 <div class="row g-4">
     {% for equipo in equipos %}
     <div class="col-md-4">
-        <div class="card h-100 shadow-sm hover-effect">
+        <div class="card h-100 shadow-sm hover-effect border-top border-primary">
             <div class="card-body">
-                <h5 class="card-title fw-bold text-primary">{{ equipo.nombre }}</h5>
-                <h6 class="card-subtitle mb-2 text-muted"><i class="fa-solid fa-location-dot"></i> {{ equipo.ubicacion }}</h6>
-                <p class="card-text small">{{ equipo.descripcion }}</p>
+                <div class="d-flex justify-content-between align-items-start">
+                    <h5 class="card-title fw-bold text-dark">{{ equipo.nombre }}</h5>
+                    <span class="badge bg-light text-dark border">
+                        <i class="fa-solid fa-location-dot text-danger"></i> {{ equipo.ubicacion }}
+                    </span>
+                </div>
+                
+                <p class="card-text text-muted mt-2 small">
+                    {{ equipo.descripcion or 'Sin descripción registrada.' }}
+                </p>
+                
                 <hr>
+                
                 <div class="d-flex justify-content-between align-items-center">
-                    <span class="badge bg-secondary">{{ equipo.mantenimientos|length }} Intervenciones</span>
-                    <a href="{{ url_for('mantenimiento.detalle_equipo', id=equipo.id) }}" class="btn btn-sm btn-outline-primary">Ver Historial</a>
+                    <a href="{{ url_for('mantenimiento.detalle_equipo', id=equipo.id) }}" class="btn btn-sm btn-primary">
+                        <i class="fa-solid fa-list"></i> Historial
+                    </a>
+                    
+                    <div class="btn-group">
+                        <a href="{{ url_for('mantenimiento.editar_equipo', id=equipo.id) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        
+                        <form action="{{ url_for('mantenimiento.desactivar_equipo', id=equipo.id) }}" method="POST" onsubmit="return confirm('¿Deseas dar de baja este equipo? Desaparecerá de la lista activa pero mantendrá su historial.');" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Dar de baja / Archivar">
+                                <i class="fa-solid fa-box-archive"></i> </button>
+                        </form>
+                    </div>
                 </div>
             </div>
+            {% if equipo.fecha_instalacion %}
+            <div class="card-footer bg-white border-0 pt-0">
+                <small class="text-muted" style="font-size: 0.75rem;">
+                    Instalado: {{ equipo.fecha_instalacion.strftime('%d/%m/%Y') }}
+                </small>
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endfor %}

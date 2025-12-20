@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, DecimalField, DateField, SelectField, SubmitField
+from wtforms import StringField, DecimalField, DateField, SelectField, SubmitField, TextAreaField
 from flask_wtf.file import FileField, FileAllowed
-from wtforms.validators import DataRequired, NumberRange
+from wtforms.validators import DataRequired, NumberRange, Optional
 from app.models import Proveedor
 
 class IngresoForm(FlaskForm):
@@ -59,3 +59,11 @@ class MantenimientoForm(FlaskForm):
     ])
     
     submit = SubmitField('Registrar Mantenimiento')
+
+class EquipoForm(FlaskForm):
+    nombre = StringField('Nombre del Equipo', validators=[DataRequired()])
+    ubicacion = StringField('Ubicación Física', validators=[DataRequired()])
+    descripcion = TextAreaField('Descripción / Detalles Técnicos', validators=[DataRequired()])
+    fecha_instalacion = DateField('Fecha Instalación (Aprox)', format='%Y-%m-%d', validators=[Optional()])
+    
+    submit = SubmitField('Guardar Equipo')

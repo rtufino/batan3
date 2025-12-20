@@ -117,6 +117,7 @@ class Equipo(db.Model):
     ubicacion = db.Column(db.String(100), nullable=True)
     fecha_instalacion = db.Column(db.Date, nullable=True)
     descripcion = db.Column(db.Text, nullable=True)
+    activo = db.Column(db.Boolean, default=True, nullable=False)
     
     mantenimientos = db.relationship('Mantenimiento', backref='equipo', lazy=True)
 

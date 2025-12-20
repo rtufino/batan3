@@ -1,8 +1,8 @@
-"""Agregar campo saldo real a Cuenta
+"""Agregar soft delete a equipos
 
-Revision ID: ba3c31735ef7
+Revision ID: 99c22224eae4
 Revises: 
-Create Date: 2025-12-20 15:45:01.727419
+Create Date: 2025-12-20 16:56:51.787394
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'ba3c31735ef7'
+revision = '99c22224eae4'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -31,6 +31,7 @@ def upgrade():
     sa.Column('tipo', sa.String(length=20), nullable=False),
     sa.Column('numero', sa.String(length=50), nullable=True),
     sa.Column('saldo_inicial', sa.Float(), nullable=True),
+    sa.Column('saldo', sa.Float(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('departamento',
@@ -47,6 +48,7 @@ def upgrade():
     sa.Column('ubicacion', sa.String(length=100), nullable=True),
     sa.Column('fecha_instalacion', sa.Date(), nullable=True),
     sa.Column('descripcion', sa.Text(), nullable=True),
+    sa.Column('activo', sa.Boolean(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('proveedor',
