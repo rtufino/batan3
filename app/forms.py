@@ -19,22 +19,3 @@ class IngresoForm(FlaskForm):
     descripcion = StringField('Detalle / Notas', default='Pago de expensas')
     
     submit = SubmitField('Registrar Ingreso')
-
-class GastoForm(FlaskForm):
-    # A quién le pagamos (Empresa eléctrica, Conserje, Ferretería)
-    proveedor_id = SelectField('Proveedor / Beneficiario', validators=[DataRequired()], coerce=int)
-    
-    # Qué estamos pagando (Luz, Agua, Mantenimiento)
-    rubro_id = SelectField('Concepto (Rubro)', validators=[DataRequired()], coerce=int)
-    
-    # De dónde sale el dinero (o de dónde saldrá si es deuda)
-    cuenta_id = SelectField('Cuenta de Origen', validators=[DataRequired()], coerce=int)
-    
-    # Estado del Gasto: ¿Lo pagué ya o es una deuda?
-    estado = SelectField('Estado del Pago', choices=[('PAGADO', 'Pagado Inmediatamente'), ('PENDIENTE', 'Por Pagar (Deuda)')], validators=[DataRequired()])
-    
-    monto = DecimalField('Monto ($)', validators=[DataRequired(), NumberRange(min=0.01)], places=2)
-    fecha = DateField('Fecha de Emisión', validators=[DataRequired()], format='%Y-%m-%d')
-    descripcion = StringField('Detalle / Notas', default='Pago de servicios')
-    
-    submit = SubmitField('Registrar Gasto')

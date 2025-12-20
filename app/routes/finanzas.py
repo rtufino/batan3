@@ -1,7 +1,8 @@
-from flask import Blueprint, render_template, redirect, url_for, flash
+from flask import Blueprint, render_template, redirect, url_for, flash, make_response
 from app.extensions import db
 from app.models import Movimiento, Departamento, Rubro, Cuenta, Proveedor
 from app.forms import IngresoForm, GastoForm
+from app.utils import generar_pdf_recibo
 from datetime import datetime
 
 finanzas_bp = Blueprint('finanzas', __name__, url_prefix='/finanzas')
@@ -103,3 +104,26 @@ def nuevo_gasto():
         form.fecha.data = datetime.now().date()
 
     return render_template('finanzas/nuevo_gasto.html', form=form)
+
+# 1. RUTA PARA VER EL HISTORIAL
+@finanzas_bp.route('/historial')
+def historial():
+    # Obtenemos los últimos 50 movimientos ordenados por fecha descendente
+    movimientos = Movimiento.query.order_by(Movimiento.fecha.desc()).limit(50).all()
+    return render_template('finanzas/historial.html', movimientos=movimientos)
+
+# 2. RUTA PARA DESCARGAR RECIBO INDIVIDUAL
+@finanzas_bp.route('/recibo/<int:id>')
+def descargar_recibo(id):
+    movimiento = Movimiento.query.get_or_404(id)
+    
+    # Generamos el PDF en memoria usando FPDF2
+    pdf_buffer = generar_pdf_recibo(movimiento)
+    
+    # Preparamos la respuesta HTTP con los bytes del PDF
+    response = make_response(pdf_buffer.getvalue())
+    response.headers['Content-Type'] = 'application/pdf'
+    # 'inline' lo abre en el navegador. 'attachment' lo descarga.
+    response.headers['Content-Disposition'] = f'inline; filename=Recibo_Batan3_{id}.pdf'
+    
+    return response
