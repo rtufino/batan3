@@ -24,11 +24,13 @@ def nuevo_ingreso():
     # 2. Si el formulario se envió y es válido
     if form.validate_on_submit():
         # 1. Crear el movimiento
+        fecha_pago_dt = datetime.combine(form.fecha_pago.data, datetime.min.time())
         nuevo_pago = Movimiento(
             tipo='INGRESO',
             estado='PAGADO', # Asumimos que si registras un ingreso, ya tienes el dinero
             monto=form.monto.data,
-            fecha=datetime.combine(form.fecha.data, datetime.min.time()),
+            fecha_emision=fecha_pago_dt,  # Para ingresos inmediatos, emisión = pago
+            fecha_pago=fecha_pago_dt,
             descripcion=form.descripcion.data,
             rubro_id=form.rubro_id.data,
             departamento_id=form.departamento_id.data,
@@ -50,8 +52,8 @@ def nuevo_ingreso():
 
     # 3. Si es GET o hubo error, mostramos el formulario
     # Pre-llenamos la fecha con el día de hoy
-    if not form.fecha.data:
-        form.fecha.data = datetime.now().date()
+    if not form.fecha_pago.data:
+        form.fecha_pago.data = datetime.now().date()
 
     return render_template('finanzas/nuevo_ingreso.html', form=form)
 
@@ -74,11 +76,23 @@ def nuevo_gasto():
                 flash(f'Fondos insuficientes. Tienes ${cuenta.saldo:.2f}', 'danger')
                 return render_template('finanzas/nuevo_gasto.html', form=form)
 
+        # Determinar fechas según el estado
+        fecha_emision_dt = datetime.combine(form.fecha_emision.data, datetime.min.time())
+        fecha_pago_dt = None
+        
+        if form.estado.data == 'PAGADO':
+            # Si está pagado, usar la fecha_pago del formulario o la fecha_emision
+            if form.fecha_pago.data:
+                fecha_pago_dt = datetime.combine(form.fecha_pago.data, datetime.min.time())
+            else:
+                fecha_pago_dt = fecha_emision_dt  # Pago inmediato
+
         nuevo_movimiento = Movimiento(
             tipo='EGRESO',
             estado=form.estado.data, # Puede ser PAGADO o PENDIENTE
             monto=form.monto.data,
-            fecha=datetime.combine(form.fecha.data, datetime.min.time()),
+            fecha_emision=fecha_emision_dt,
+            fecha_pago=fecha_pago_dt,
             descripcion=form.descripcion.data,
             rubro_id=form.rubro_id.data,
             proveedor_id=form.proveedor_id.data,
@@ -100,16 +114,18 @@ def nuevo_gasto():
             db.session.rollback()
             flash(f'Error: {str(e)}', 'danger')
 
-    if not form.fecha.data:
-        form.fecha.data = datetime.now().date()
+    if not form.fecha_emision.data:
+        form.fecha_emision.data = datetime.now().date()
+    if not form.fecha_pago.data and form.estado.data == 'PAGADO':
+        form.fecha_pago.data = datetime.now().date()
 
     return render_template('finanzas/nuevo_gasto.html', form=form)
 
 # 1. RUTA PARA VER EL HISTORIAL
 @finanzas_bp.route('/historial')
 def historial():
-    # Obtenemos los últimos 50 movimientos ordenados por fecha descendente
-    movimientos = Movimiento.query.order_by(Movimiento.fecha.desc()).limit(50).all()
+    # Obtenemos los últimos 50 movimientos ordenados por fecha de emisión descendente
+    movimientos = Movimiento.query.order_by(Movimiento.fecha_emision.desc()).limit(50).all()
     return render_template('finanzas/historial.html', movimientos=movimientos)
 
 # 2. RUTA PARA DESCARGAR RECIBO INDIVIDUAL
@@ -127,3 +143,44 @@ def descargar_recibo(id):
     response.headers['Content-Disposition'] = f'inline; filename=Recibo_Batan3_{id}.pdf'
     
     return response
+
+# 3. RUTA PARA REGISTRAR PAGO DE MOVIMIENTO PENDIENTE
+@finanzas_bp.route('/registrar-pago/<int:id>', methods=['GET', 'POST'])
+def registrar_pago(id):
+    movimiento = Movimiento.query.get_or_404(id)
+    
+    # Verificar que el movimiento esté pendiente
+    if movimiento.estado != 'PENDIENTE':
+        flash('Este movimiento ya ha sido pagado.', 'warning')
+        return redirect(url_for('finanzas.historial'))
+    
+    # Obtener la cuenta asociada
+    cuenta = Cuenta.query.get(movimiento.cuenta_id)
+    
+    # Verificar fondos suficientes para egresos
+    if movimiento.tipo == 'EGRESO':
+        if cuenta.saldo < movimiento.monto:
+            flash(f'Fondos insuficientes en {cuenta.nombre}. Saldo disponible: ${cuenta.saldo:.2f}', 'danger')
+            return redirect(url_for('finanzas.historial'))
+    
+    try:
+        # Actualizar el estado del movimiento
+        movimiento.estado = 'PAGADO'
+        movimiento.fecha_pago = datetime.now()
+        
+        # Actualizar el saldo de la cuenta
+        if movimiento.tipo == 'INGRESO':
+            cuenta.saldo += movimiento.monto
+        else:  # EGRESO
+            cuenta.saldo -= movimiento.monto
+        
+        db.session.commit()
+        
+        tipo_msg = 'Ingreso' if movimiento.tipo == 'INGRESO' else 'Gasto'
+        flash(f'{tipo_msg} registrado como pagado exitosamente: ${movimiento.monto:.2f}', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al registrar el pago: {str(e)}', 'danger')
+    
+    return redirect(url_for('finanzas.historial'))

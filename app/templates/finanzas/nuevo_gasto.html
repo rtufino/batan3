@@ -45,9 +45,17 @@
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Fecha</label>
-                        {{ form.fecha(class="form-control", type="date") }}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha de Emisión</label>
+                            {{ form.fecha_emision(class="form-control", type="date") }}
+                            <div class="form-text">Fecha del documento/factura</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha de Pago (opcional)</label>
+                            {{ form.fecha_pago(class="form-control", type="date") }}
+                            <div class="form-text">Solo si ya está pagado</div>
+                        </div>
                     </div>
 
                     <div class="mb-4">

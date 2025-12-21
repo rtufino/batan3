@@ -34,8 +34,14 @@ def generar_pdf_recibo(movimiento):
     
     # --- DATOS DEL ENCABEZADO (Fecha y Numero) ---
     pdf.set_font('Helvetica', 'B', 10)
-    pdf.cell(95, 8, f"FECHA: {movimiento.fecha.strftime('%d/%m/%Y')}", ln=0)
+    pdf.cell(95, 8, f"FECHA EMISIÓN: {movimiento.fecha_emision.strftime('%d/%m/%Y')}", ln=0)
     pdf.cell(95, 8, f"NRO. MOVIMIENTO: #{str(movimiento.id).zfill(6)}", ln=1, align='R')
+    
+    # Mostrar fecha de pago si existe
+    if movimiento.fecha_pago:
+        pdf.set_font('Helvetica', '', 9)
+        pdf.cell(0, 6, f"Fecha de Pago: {movimiento.fecha_pago.strftime('%d/%m/%Y')}", ln=1)
+    
     pdf.ln(5)
 
     # --- TIPO Y ESTADO ---
@@ -89,7 +95,7 @@ def generar_pdf_aviso(depto, movimiento_actual, deuda_anterior):
     pdf.set_font('Helvetica', 'B', 16)
     pdf.cell(0, 10, 'EDIFICIO BATAN 3 - AVISO DE COBRO', ln=1, align='C')
     pdf.set_font('Helvetica', '', 10)
-    pdf.cell(0, 5, f"Fecha de Emisión: {movimiento_actual.fecha.strftime('%d/%m/%Y')}", ln=1, align='C')
+    pdf.cell(0, 5, f"Fecha de Emisión: {movimiento_actual.fecha_emision.strftime('%d/%m/%Y')}", ln=1, align='C')
     pdf.ln(10)
 
     # Datos del Departamento y Propietario
@@ -110,7 +116,7 @@ def generar_pdf_aviso(depto, movimiento_actual, deuda_anterior):
 
     pdf.set_font('Helvetica', '', 11)
     # Valor del mes actual
-    mes_anio_pdf = movimiento_actual.fecha.strftime('%m / %Y')
+    mes_anio_pdf = movimiento_actual.fecha_emision.strftime('%m / %Y')
     pdf.cell(140, 8, f"Expensa Ordinaria - {mes_anio_pdf}", border=1)
     pdf.cell(50, 8, f"$ {movimiento_actual.monto:.2f}", border=1, ln=1, align='R')
 

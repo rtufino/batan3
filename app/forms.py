@@ -17,7 +17,7 @@ class IngresoForm(FlaskForm):
     
     # Datos del pago
     monto = DecimalField('Monto ($)', validators=[DataRequired(), NumberRange(min=0.01)], places=2)
-    fecha = DateField('Fecha del Pago', validators=[DataRequired()], format='%Y-%m-%d')
+    fecha_pago = DateField('Fecha del Pago', validators=[DataRequired()], format='%Y-%m-%d')
     descripcion = StringField('Detalle / Notas', default='Pago de expensas')
     
     submit = SubmitField('Registrar Ingreso')
@@ -36,7 +36,8 @@ class GastoForm(FlaskForm):
     estado = SelectField('Estado del Pago', choices=[('PAGADO', 'Pagado Inmediatamente'), ('PENDIENTE', 'Por Pagar (Deuda)')], validators=[DataRequired()])
     
     monto = DecimalField('Monto ($)', validators=[DataRequired(), NumberRange(min=0.01)], places=2)
-    fecha = DateField('Fecha de Emisión', validators=[DataRequired()], format='%Y-%m-%d')
+    fecha_emision = DateField('Fecha de Emisión', validators=[DataRequired()], format='%Y-%m-%d')
+    fecha_pago = DateField('Fecha de Pago (si ya está pagado)', validators=[Optional()], format='%Y-%m-%d')
     descripcion = StringField('Detalle / Notas', default='Pago de servicios')
     
     submit = SubmitField('Registrar Gasto')

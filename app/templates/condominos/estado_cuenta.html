@@ -47,7 +47,8 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Fecha</th>
+                            <th>Fecha Emisión</th>
+                            <th>Fecha Pago</th>
                             <th>Descripción</th>
                             <th>Estado</th>
                             <th class="text-end">Monto</th>
@@ -56,7 +57,14 @@
                     <tbody>
                         {% for m in movimientos %}
                         <tr>
-                            <td>{{ m.fecha.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ m.fecha_emision.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% if m.fecha_pago %}
+                                    {{ m.fecha_pago.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 <span class="d-block fw-bold">{{ m.descripcion }}</span>
                                 <small class="text-muted">{{ m.rubro.nombre }}</small>

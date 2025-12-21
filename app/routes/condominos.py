@@ -95,8 +95,8 @@ def generar_mensualidad():
         existe = Movimiento.query.filter(
             Movimiento.departamento_id == depto.id,
             Movimiento.rubro_id == rubro_expensa.id,
-            extract('month', Movimiento.fecha) == mes_actual,
-            extract('year', Movimiento.fecha) == anio_actual
+            extract('month', Movimiento.fecha_emision) == mes_actual,
+            extract('year', Movimiento.fecha_emision) == anio_actual
         ).first()
 
         if not existe:
@@ -108,7 +108,8 @@ def generar_mensualidad():
                 tipo='INGRESO',
                 estado='PENDIENTE', # Es deuda hasta que se registre el pago
                 monto=depto.valor_expensa,
-                fecha=hoy,
+                fecha_emision=hoy,  # Fecha de generación de la expensa
+                fecha_pago=None,    # Aún no pagado
                 descripcion=f"{depto.numero} - {mes_anio_formato}",
                 rubro_id=rubro_expensa.id,
                 departamento_id=depto.id,
@@ -147,11 +148,11 @@ def generar_mensualidad():
 @condominos_bp.route('/estado-cuenta/<int:id>')
 def estado_cuenta(id):
     depto = Departamento.query.get_or_404(id)
-    # Obtenemos todos los movimientos (Pagados y Pendientes) ordenados por fecha
-    movimientos = Movimiento.query.filter_by(departamento_id=id).order_by(Movimiento.fecha.desc()).all()
+    # Obtenemos todos los movimientos (Pagados y Pendientes) ordenados por fecha de emisión
+    movimientos = Movimiento.query.filter_by(departamento_id=id).order_by(Movimiento.fecha_emision.desc()).all()
     
-    return render_template('condominos/estado_cuenta.html', 
-                           depto=depto, 
+    return render_template('condominos/estado_cuenta.html',
+                           depto=depto,
                            movimientos=movimientos)
 
 
@@ -175,7 +176,7 @@ def registrar_pago(movimiento_id):
         
         # 3. Actualizar los datos del movimiento
         movimiento.estado = 'PAGADO'
-        movimiento.fecha = form.fecha_pago.data
+        movimiento.fecha_pago = datetime.combine(form.fecha_pago.data, datetime.min.time())
         movimiento.cuenta_id = form.cuenta_id.data
         
         # Manejo de archivo (comprobante) si existe

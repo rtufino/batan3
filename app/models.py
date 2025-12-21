@@ -189,7 +189,13 @@ class Movimiento(db.Model):
     """
     __tablename__ = 'movimiento'
     id = db.Column(db.Integer, primary_key=True)
-    fecha = db.Column(db.DateTime, default=datetime.now)
+    
+    # FECHAS SEPARADAS:
+    # fecha_emision: Cuando se genera el documento/obligación (siempre se registra)
+    fecha_emision = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    # fecha_pago: Cuando realmente se efectúa el pago (NULL si está PENDIENTE)
+    fecha_pago = db.Column(db.DateTime, nullable=True)
+    
     tipo = db.Column(db.String(10), nullable=False) # 'INGRESO' o 'EGRESO'
     monto = db.Column(db.Float, nullable=False)
     descripcion = db.Column(db.String(200), nullable=True)
@@ -212,4 +218,5 @@ class Movimiento(db.Model):
     cuenta_id = db.Column(db.Integer, db.ForeignKey('cuenta.id'), nullable=False)
 
     def __repr__(self):
-        return f'<{self.tipo} ${self.monto} - {self.fecha.date()}>'
+        fecha_mostrar = self.fecha_pago if self.fecha_pago else self.fecha_emision
+        return f'<{self.tipo} ${self.monto} - Emitido: {self.fecha_emision.date()} - Pagado: {fecha_mostrar.date() if self.fecha_pago else "PENDIENTE"}>'
