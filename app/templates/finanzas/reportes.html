@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-secondary"><i class="fa-solid fa-chart-line"></i> Reporte de Gestión: {{ mes_anio }}</h2>
+        <button onclick="window.print()" class="btn btn-outline-dark d-print-none">
+            <i class="fa-solid fa-print"></i> Imprimir Reporte
+        </button>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold text-dark">Distribución de Gastos (Egresos)</h5>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-center">
+                    {% if labels_gastos %}
+                        <canvas id="chartGastos"></canvas>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fa-solid fa-folder-open fa-3x text-light mb-3"></i>
+                            <p class="text-muted">No hay gastos pagados registrados en este mes.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold text-dark">Principales Deudores (Cuentas por Cobrar)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Departamento</th>
+                                    <th class="text-end">Monto Pendiente</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for m in morosidad %}
+                                <tr>
+                                    <td><span class="badge bg-danger me-2">{{ loop.index }}</span> Depto {{ m.numero }}</td>
+                                    <td class="text-end fw-bold text-danger">${{ "%.2f"|format(m.total_deuda) }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted">No hay deudas pendientes.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('chartGastos');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ labels_gastos|tojson }},
+                datasets: [{
+                    label: 'Total Gastado',
+                    data: {{ values_gastos|tojson }},
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                    ],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

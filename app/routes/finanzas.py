@@ -4,6 +4,7 @@ from app.models import Movimiento, Departamento, Rubro, Cuenta, Proveedor
 from app.forms import ConfirmarPagoForm, IngresoForm, GastoForm, TransferenciaForm
 from app.utils import generar_pdf_recibo
 from datetime import datetime
+from sqlalchemy import func, extract
 
 finanzas_bp = Blueprint('finanzas', __name__, url_prefix='/finanzas')
 
@@ -289,3 +290,39 @@ def nueva_transferencia():
             flash(f'Error: {str(e)}', 'danger')
 
     return render_template('finanzas/transferencia.html', form=form)
+
+@finanzas_bp.route('/reportes')
+def reportes():
+    hoy = datetime.now()
+    
+    # 1. GASTOS POR RUBRO (Mes Actual - Solo lo ya PAGADO)
+    # Filtramos por Egreso, Pagado y el mes/año en curso
+    gastos_query = db.session.query(
+        Rubro.nombre,
+        func.sum(Movimiento.monto).label('total')
+    ).join(Movimiento).filter(
+        Movimiento.tipo == 'EGRESO',
+        Movimiento.estado == 'PAGADO',
+        extract('month', Movimiento.fecha_pago) == hoy.month,
+        extract('year', Movimiento.fecha_pago) == hoy.year
+    ).group_by(Rubro.nombre).all()
+
+    # Preparamos las listas para Chart.js
+    labels_gastos = [g.nombre for g in gastos_query]
+    values_gastos = [float(g.total) for g in gastos_query]
+
+    # 2. AUDITORÍA DE MOROSIDAD (Para comparar)
+    # Departamentos que más deben (Ingresos Pendientes)
+    morosidad = db.session.query(
+        Departamento.numero,
+        func.sum(Movimiento.monto).label('total_deuda')
+    ).join(Movimiento).filter(
+        Movimiento.tipo == 'INGRESO',
+        Movimiento.estado == 'PENDIENTE'
+    ).group_by(Departamento.numero).order_by(func.sum(Movimiento.monto).desc()).limit(5).all()
+
+    return render_template('finanzas/reportes.html', 
+                           labels_gastos=labels_gastos, 
+                           values_gastos=values_gastos,
+                           morosidad=morosidad,
+                           mes_anio=hoy.strftime('%m / %Y'))
