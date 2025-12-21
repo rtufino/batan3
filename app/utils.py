@@ -80,3 +80,58 @@ def generar_pdf_recibo(movimiento):
 
     # Retornar los bytes del PDF
     return BytesIO(pdf.output(dest='S'))
+
+def generar_pdf_aviso(depto, movimiento_actual, deuda_anterior):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Encabezado
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.cell(0, 10, 'EDIFICIO BATAN 3 - AVISO DE COBRO', ln=1, align='C')
+    pdf.set_font('Helvetica', '', 10)
+    pdf.cell(0, 5, f"Fecha de Emisión: {movimiento_actual.fecha.strftime('%d/%m/%Y')}", ln=1, align='C')
+    pdf.ln(10)
+
+    # Datos del Departamento y Propietario
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.cell(0, 8, f" DEPARTAMENTO: {depto.numero}", ln=1, fill=True)
+    pdf.set_font('Helvetica', '', 11)
+    
+    propietario = next((p for p in depto.personas if p.rol == 'PROPIETARIO'), None)
+    pdf.cell(0, 8, f"Propietario: {propietario.nombre if propietario else 'S/N'}", ln=1)
+    pdf.cell(0, 8, f"Alícuota: {depto.alicuota}%", ln=1)
+    pdf.ln(5)
+
+    # Detalle de Valores
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.cell(140, 8, "CONCEPTO", border=1)
+    pdf.cell(50, 8, "VALOR", border=1, ln=1, align='C')
+
+    pdf.set_font('Helvetica', '', 11)
+    # Valor del mes actual
+    mes_anio_pdf = movimiento_actual.fecha.strftime('%m / %Y')
+    pdf.cell(140, 8, f"Expensa Ordinaria - {mes_anio_pdf}", border=1)
+    pdf.cell(50, 8, f"$ {movimiento_actual.monto:.2f}", border=1, ln=1, align='R')
+
+    # Deuda anterior (Saldo pendiente antes de este cargo)
+    if deuda_anterior > 0:
+        pdf.set_text_color(200, 0, 0) # Rojo para deuda
+        pdf.cell(140, 8, "Saldo Pendiente (Meses anteriores)", border=1)
+        pdf.cell(50, 8, f"$ {deuda_anterior:.2f}", border=1, ln=1, align='R')
+        pdf.set_text_color(0, 0, 0)
+
+    # Total
+    pdf.set_font('Helvetica', 'B', 12)
+    total = movimiento_actual.monto + deuda_anterior
+    pdf.cell(140, 10, "TOTAL A CANCELAR", border=1, fill=True)
+    pdf.cell(50, 10, f"$ {total:.2f}", border=1, ln=1, align='R', fill=True)
+
+    # Instrucciones de Pago
+    pdf.ln(10)
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.cell(0, 5, "INSTRUCCIONES DE PAGO:", ln=1)
+    pdf.set_font('Helvetica', '', 9)
+    pdf.multi_cell(0, 5, "Favor realizar depósito o transferencia a la Cuenta Corriente del Banco Pichincha Nro. 2100XXXXXX a nombre de EDIFICIO BATAN 3. Enviar el comprobante por los canales oficiales.")
+
+    return pdf.output(dest='S') # Retornamos los bytes

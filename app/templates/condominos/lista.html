@@ -14,12 +14,20 @@
 <div class="row row-cols-1 row-cols-lg-2 g-4">
     {% for d in departamentos %}
     <div class="col">
-        <div class="card h-100 shadow-sm border-0 border-start border-4 {% if d.esta_arrendado %}border-warning{% else %}border-info{% endif %}">
+        <div class="card h-100 shadow-sm border-0 border-start border-4 {% if d.esta_arrendado %}border-warning{% else %}border-info{% endif %} hover-effect">
             <div class="card-body">
                 <div class="row">
                     <div class="col-sm-4 text-center border-end">
                         <h1 class="display-4 fw-bold text-primary mb-0">{{ d.numero }}</h1>
-                        <span class="badge bg-light text-dark border">Piso {{ d.piso }}</span>
+                        <span class="badge bg-light text-dark border mb-2">Piso {{ d.piso }}</span>
+                        
+                        <div class="mt-2 py-2 rounded bg-light border">
+                            <small class="text-muted d-block">Saldo Pendiente</small>
+                            <span class="fs-4 fw-bold {% if d.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
+                                ${{ "%.2f"|format(d.saldo_pendiente) }}
+                            </span>
+                        </div>
+
                         <div class="mt-3">
                              {% if d.esta_arrendado %}
                                 <span class="text-warning small fw-bold"><i class="fa-solid fa-key"></i> ARRENDADO</span>
@@ -33,31 +41,46 @@
                         <div class="mb-2">
                             <small class="text-muted text-uppercase d-block">Propietario</small>
                             <h5 class="fw-bold mb-0">
-                                {# Buscamos al propietario entre los contactos #}
                                 {% set propietario = d.personas|selectattr("rol", "equalto", "PROPIETARIO")|first %}
                                 {{ propietario.nombre if propietario else "Sin asignar" }}
                             </h5>
                         </div>
 
                         <div class="row mb-3">
-                            <div class="col-4">
+                            <div class="col-6 border-end">
                                 <small class="text-muted d-block">Expensa Fija</small>
                                 <span class="fw-bold fs-5 text-success">${{ "%.2f"|format(d.valor_expensa) }}</span>
                             </div>
-                            <div class="col-3">
-                                <small class="text-muted d-block">Alícuota</small>
-                                <span class="fw-bold">{{ "%.2f"|format(d.alicuota) }}%</span>
-                            </div>
-                            <div class="col-5">
+                            <div class="col-6">
                                 <small class="text-muted d-block">Paga</small>
-                                <span class="fw-bold">{{ d.responsable_pago }}</span>
+                                <span class="fw-bold text-uppercase">{{ d.responsable_pago }}</span>
                             </div>
                         </div>
                         
-                        <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
-                            <a href="{{ url_for('condominos.estado_cuenta', id=d.id) }}" class="btn btn-outline-dark btn-sm shadow-sm">
-                                <i class="fa-solid fa-list-check"></i> Estado de Cuenta
-                            </a>
+                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center bg-light p-2 rounded">
+                            <div class="btn-group">
+                                <a href="{{ url_for('condominos.estado_cuenta', id=d.id) }}" class="btn btn-outline-dark btn-sm shadow-sm" title="Ver historial">
+                                    <i class="fa-solid fa-list-check"></i> Historial
+                                </a>
+                                
+                                {# MODIFICACIÓN: Buscamos el último cargo pendiente para descargar el aviso #}
+                                {% set ultimo_pendiente = d.pagos|selectattr("estado", "equalto", "PENDIENTE")|sort(attribute='fecha', reverse=True)|first %}
+                               
+                                {% if ultimo_pendiente %}
+                                    {% if ultimo_pendiente.comprobante %}
+                                        {# Si el archivo ya existe en el servidor #}
+                                        <a href="{{ url_for('static', filename='uploads/avisos/' + ultimo_pendiente.comprobante) }}" target="_blank" class="btn btn-outline-danger btn-sm shadow-sm">
+                                            <i class="fa-solid fa-file-pdf"></i> Aviso
+                                        </a>
+                                    {% else %}
+                                        {# Si el cargo existe pero no se generó el PDF (útil para registros viejos) #}
+                                        <a href="{{ url_for('condominos.reimprimir_aviso', movimiento_id=ultimo_pendiente.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm shadow-sm">
+                                            <i class="fa-solid fa-print"></i> Aviso
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+
                             <a href="{{ url_for('condominos.editar_departamento', id=d.id) }}" class="btn btn-primary btn-sm shadow-sm">
                                 <i class="fa-solid fa-user-pen"></i> Editar Info
                             </a>
@@ -71,9 +94,12 @@
 </div>
 
 <style>
+    .hover-effect {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
     .hover-effect:hover {
         transform: translateY(-5px);
-        transition: 0.3s;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
     }
 </style>
 {% endblock %}

@@ -13,7 +13,7 @@ def nuevo_ingreso():
     
     # 1. Cargar las opciones de los SelectFields dinámicamente desde la BD
     # (Tuplas: valor, etiqueta)
-    form.departamento_id.choices = [(d.id, f"Depto {d.numero} - {d.propietarios[0].nombre}") for d in Departamento.query.all()]
+    form.departamento_id.choices = [(d.id, f"Depto {d.numero} - {d.personas[0].nombre}") for d in Departamento.query.all()]
     
     # Filtramos solo rubros de tipo INGRESO
     form.rubro_id.choices = [(r.id, r.nombre) for r in Rubro.query.filter_by(tipo='INGRESO').all()]

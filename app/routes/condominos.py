@@ -1,11 +1,14 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, send_file
 from app.models import Departamento, PersonaContacto, Movimiento, Cuenta
 from app.forms import DepartamentoForm, PersonaContactoForm, PagoForm
 from app.extensions import db
 from datetime import datetime
 from sqlalchemy import extract
 
+from app.utils import generar_pdf_aviso # Importamos la nueva función
+
 import os
+import io
 from werkzeug.utils import secure_filename
 
 condominos_bp = Blueprint('condominos', __name__, url_prefix='/condominos')
@@ -94,18 +97,37 @@ def generar_mensualidad():
         ).first()
 
         if not existe:
+            # 1. Calculamos la deuda ANTERIOR (saldo_pendiente actual)
+            deuda_previa = depto.saldo_pendiente
+
             # 3. Crear el cargo pendiente (Deuda para el vecino)
             nuevo_cargo = Movimiento(
                 tipo='INGRESO',
                 estado='PENDIENTE', # Es deuda hasta que se registre el pago
                 monto=depto.valor_expensa,
                 fecha=hoy,
-                descripcion=f"{depto.numero} - {hoy.strftime('%B %Y')}",
+                descripcion=f"{depto.numero} - {hoy.strftime('%M / %Y')}",
                 rubro_id=rubro_expensa.id,
                 departamento_id=depto.id,
                 cuenta_id=cuenta_principal.id
             )
             db.session.add(nuevo_cargo)
+            db.session.flush() # Para obtener el ID del movimiento
+
+            # 3. GENERACIÓN FÍSICA DEL PDF
+            pdf_content = generar_pdf_aviso(depto, nuevo_cargo, deuda_previa)
+            
+            # Carpeta: static/uploads/avisos/2024/diciembre/
+            ruta_carpeta = os.path.join('app/static/uploads/avisos', f"{hoy.year}", f"{hoy.month}")
+            os.makedirs(ruta_carpeta, exist_ok=True)
+            
+            nombre_archivo = f"Aviso_{depto.numero}_{hoy.strftime('%m_%Y')}.pdf"
+            with open(os.path.join(ruta_carpeta, nombre_archivo), 'wb') as f:
+                f.write(pdf_content)
+            
+            # Guardamos la ruta en el campo comprobante para descargarlo después
+            nuevo_cargo.comprobante_url = f"{hoy.year}/{hoy.month}/{nombre_archivo}"
+
             generados += 1
         else:
             omitidos += 1
@@ -170,3 +192,22 @@ def registrar_pago(movimiento_id):
         return redirect(url_for('condominos.estado_cuenta', id=depto.id))
 
     return render_template('condominos/registrar_pago.html', form=form, movimiento=movimiento, depto=depto)
+
+@condominos_bp.route('/reimprimir-aviso/<int:movimiento_id>')
+def reimprimir_aviso(movimiento_id):
+    movimiento = Movimiento.query.get_or_404(movimiento_id)
+    depto = movimiento.departamento
+    
+    # Deuda anterior = Saldo total actual - Monto de este movimiento específico
+    deuda_anterior = depto.saldo_pendiente - movimiento.monto
+    
+    # Obtenemos los bytes desde la función en utils.py
+    pdf_content = generar_pdf_aviso(depto, movimiento, deuda_anterior)
+    
+    # Retornamos el stream de bytes directamente al navegador
+    return send_file(
+        io.BytesIO(pdf_content),
+        mimetype='application/pdf',
+        as_attachment=False, # False para que se abra en el navegador
+        download_name=f"Aviso_{depto.numero}.pdf"
+    )
