@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, make_response
 from app.extensions import db
 from app.models import Movimiento, Departamento, Rubro, Cuenta, Proveedor
-from app.forms import ConfirmarPagoForm, IngresoForm, GastoForm
+from app.forms import ConfirmarPagoForm, IngresoForm, GastoForm, TransferenciaForm
 from app.utils import generar_pdf_recibo
 from datetime import datetime
 
@@ -191,3 +191,57 @@ def registrar_pago(id):
             flash(f'Error: {str(e)}', 'danger')
 
     return render_template('finanzas/confirmar_pago.html', form=form, movimiento=movimiento)
+
+@finanzas_bp.route('/transferencia', methods=['GET', 'POST'])
+def nueva_transferencia():
+    form = TransferenciaForm()
+    cuentas = Cuenta.query.all()
+    form.cuenta_origen_id.choices = [(c.id, f"{c.nombre} (${c.saldo:.2f})") for c in cuentas]
+    form.cuenta_destino_id.choices = [(c.id, c.nombre) for c in cuentas]
+
+    if form.validate_on_submit():
+        if form.cuenta_origen_id.data == form.cuenta_destino_id.data:
+            flash('La cuenta de origen y destino no pueden ser la misma.', 'danger')
+            return render_template('finanzas/transferencia.html', form=form)
+
+        c_origen = Cuenta.query.get(form.cuenta_origen_id.data)
+        c_destino = Cuenta.query.get(form.cuenta_destino_id.data)
+        monto = float(form.monto.data)
+
+        if c_origen.saldo < monto:
+            flash(f'Saldo insuficiente en {c_origen.nombre}.', 'danger')
+            return render_template('finanzas/transferencia.html', form=form)
+
+        try:
+            # 1. Movimiento de Salida (EGRESO)
+            salida = Movimiento(
+                tipo='EGRESO', estado='PAGADO', monto=monto,
+                descripcion=f"Transferencia a {c_destino.nombre}: {form.observacion.data}",
+                fecha_emision=datetime.combine(form.fecha.data, datetime.min.time()),
+                fecha_pago=datetime.combine(form.fecha.data, datetime.min.time()),
+                es_transferencia=True, cuenta_id=c_origen.id,
+                rubro_id=Rubro.query.filter_by(nombre="Transferencia Interna").first().id
+            )
+            # 2. Movimiento de Entrada (INGRESO)
+            entrada = Movimiento(
+                tipo='INGRESO', estado='PAGADO', monto=monto,
+                descripcion=f"Transferencia desde {c_origen.nombre}: {form.observacion.data}",
+                fecha_emision=datetime.combine(form.fecha.data, datetime.min.time()),
+                fecha_pago=datetime.combine(form.fecha.data, datetime.min.time()),
+                es_transferencia=True, cuenta_id=c_destino.id,
+                rubro_id=Rubro.query.filter_by(nombre="Transferencia Interna").first().id
+            )
+            
+            # 3. Actualizar Saldos Físicos
+            c_origen.saldo -= monto
+            c_destino.saldo += monto
+
+            db.session.add_all([salida, entrada])
+            db.session.commit()
+            flash('Transferencia realizada con éxito.', 'success')
+            return redirect(url_for('finanzas.historial'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error: {str(e)}', 'danger')
+
+    return render_template('finanzas/transferencia.html', form=form)

@@ -113,3 +113,11 @@ class ConfirmarPagoForm(FlaskForm):
     fecha_pago = DateField('Fecha del Movimiento', validators=[DataRequired()], default=datetime.now)
     observacion = TextAreaField('Observaciones / Ref. Transferencia', validators=[Optional()])
     submit = SubmitField('Confirmar Transacción')
+
+class TransferenciaForm(FlaskForm):
+    cuenta_origen_id = SelectField('Desde Cuenta', coerce=int, validators=[DataRequired()])
+    cuenta_destino_id = SelectField('Hacia Cuenta', coerce=int, validators=[DataRequired()])
+    monto = DecimalField('Monto a Transferir ($)', places=2, validators=[DataRequired(), NumberRange(min=0.01)])
+    fecha = DateField('Fecha', validators=[DataRequired()], default=datetime.now)
+    observacion = StringField('Observación / Referencia', render_kw={"placeholder": "Ej: Reposición de caja chica"})
+    submit = SubmitField('Ejecutar Transferencia')
