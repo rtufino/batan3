@@ -70,6 +70,9 @@ def gestionar_persona(depto_id=None, persona_id=None):
 @condominos_bp.route('/generar-mensualidad', methods=['POST'])
 def generar_mensualidad():
     hoy = datetime.now()
+    # Formateamos el mes y año como "MM / YYYY"
+    mes_anio_formato = hoy.strftime('%m / %Y') 
+
     mes_actual = hoy.month
     anio_actual = hoy.year
     
@@ -106,7 +109,7 @@ def generar_mensualidad():
                 estado='PENDIENTE', # Es deuda hasta que se registre el pago
                 monto=depto.valor_expensa,
                 fecha=hoy,
-                descripcion=f"{depto.numero} - {hoy.strftime('%M / %Y')}",
+                descripcion=f"{depto.numero} - {mes_anio_formato}",
                 rubro_id=rubro_expensa.id,
                 departamento_id=depto.id,
                 cuenta_id=cuenta_principal.id
