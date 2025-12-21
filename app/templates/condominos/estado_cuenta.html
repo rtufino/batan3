@@ -21,7 +21,7 @@
 </div>
 
 <div class="row">
-    <div class="col-md-4 mb-4">
+    <div class="col-md-3 mb-3">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-dark text-white">Información de Contacto</div>
             <div class="card-body">
@@ -39,63 +39,151 @@
         </div>
     </div>
 
-    <div class="col-md-8">
+    <div class="col-md-9">
         <div class="card shadow-sm border-0">
-            <div class="card-header bg-secondary text-white">Historial de Cargos y Pagos</div>
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <span>Historial de Cargos y Pagos</span>
+                <!-- Selector de registros por página -->
+                <form method="GET" action="{{ url_for('condominos.estado_cuenta', id=depto.id) }}" class="d-inline">
+                    <select name="per_page" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()">
+                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                    </select>
+                    <small class="text-white ms-2">por página</small>
+                </form>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Fecha Emisión</th>
-                                            <th>Fecha Pago</th>
-                                            <th>Descripción</th>
-                                            <th>Estado</th>
-                                            <th class="text-end">Monto</th>
-                                            <th class="text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for m in movimientos %}
-                                        <tr>
-                                            <td>{{ m.fecha_emision.strftime('%d/%m/%Y') }}</td>
-                                            <td>
-                                                {% if m.fecha_pago %}
-                                                    {{ m.fecha_pago.strftime('%d/%m/%Y') }}
-                                                {% else %}
-                                                    <span class="text-muted">-</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <span class="d-block fw-bold">{{ m.descripcion }}</span>
-                                                <small class="text-muted">{{ m.rubro.nombre }}</small>
-                                            </td>
-                                            <td>
-                                                {% if m.estado == 'PENDIENTE' %}
-                                                    <span class="badge bg-warning text-dark">Pendiente</span>
-                                                {% else %}
-                                                    <span class="badge bg-success">Pagado</span>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-end fw-bold {% if m.estado == 'PENDIENTE' %}text-danger{% else %}text-success{% endif %}">
-                                                {{ "+" if m.estado == 'PENDIENTE' else "-" }} ${{ "%.2f"|format(m.monto) }}
-                                            </td>
-                                            <td class="text-center">
-                                                {% if m.estado == 'PENDIENTE' %}
-                                                    <a href="{{ url_for('condominos.registrar_pago', movimiento_id=m.id) }}" class="btn btn-sm btn-success" title="Cobrar">
-                                                        <i class="fa-solid fa-cash-register"></i>
-                                                    </a>
-                                                    <a href="{{ url_for('condominos.reimprimir_aviso', movimiento_id=m.id) }}" class="btn btn-sm btn-primary" title="Enviar Aviso de Cobro" target="_blank">
-                                                        <i class="fa-solid fa-envelope"></i>
-                                                    </a>
-                                                {% else %}
-                                                    <span class="text-muted">-</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha Emisión</th>
+                            <th>Fecha Pago</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th class="text-end">Monto</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if movimientos %}
+                            {% for m in movimientos %}
+                            <tr>
+                                <td>{{ m.fecha_emision.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if m.fecha_pago %}
+                                        {{ m.fecha_pago.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="d-block fw-bold">{{ m.descripcion }}</span>
+                                    <small class="text-muted">{{ m.rubro.nombre }}</small>
+                                </td>
+                                <td>
+                                    {% if m.estado == 'PENDIENTE' %}
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Pagado</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end fw-bold {% if m.estado == 'PENDIENTE' %}text-danger{% else %}text-success{% endif %}">
+                                    {{ "+" if m.estado == 'PENDIENTE' else "-" }} ${{ "%.2f"|format(m.monto) }}
+                                </td>
+                                <td class="text-center">
+                                    {% if m.estado == 'PENDIENTE' %}
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('condominos.registrar_pago', movimiento_id=m.id) }}" class="btn btn-success" title="Cobrar">
+                                                <i class="fa-solid fa-cash-register"></i>
+                                            </a>
+                                            <a href="{{ url_for('condominos.reimprimir_aviso', movimiento_id=m.id) }}" class="btn btn-primary" title="Enviar Aviso de Cobro" target="_blank">
+                                                <i class="fa-solid fa-envelope"></i>
+                                            </a>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-inbox fa-2x mb-2 d-block"></i>
+                                    No hay movimientos registrados para este departamento.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
+            
+            <!-- Paginación -->
+            {% if pagination.pages > 1 %}
+            <div class="card-footer bg-light">
+                <nav aria-label="Paginación">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        <!-- Botón Primera Página -->
+                        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('condominos.estado_cuenta', id=depto.id, page=1, per_page=per_page) }}">
+                                <i class="fa-solid fa-angles-left"></i>
+                            </a>
+                        </li>
+                        
+                        <!-- Botón Anterior -->
+                        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('condominos.estado_cuenta', id=depto.id, page=pagination.prev_num if pagination.has_prev else 1, per_page=per_page) }}">
+                                <i class="fa-solid fa-angle-left"></i>
+                            </a>
+                        </li>
+
+                        <!-- Números de Página -->
+                        {% set start_page = [pagination.page - 2, 1]|max %}
+                        {% set end_page = [pagination.page + 2, pagination.pages]|min %}
+                        
+                        {% if start_page > 1 %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                        
+                        {% for page_num in range(start_page, end_page + 1) %}
+                            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('condominos.estado_cuenta', id=depto.id, page=page_num, per_page=per_page) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                        
+                        {% if end_page < pagination.pages %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+
+                        <!-- Botón Siguiente -->
+                        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('condominos.estado_cuenta', id=depto.id, page=pagination.next_num if pagination.has_next else pagination.pages, per_page=per_page) }}">
+                                <i class="fa-solid fa-angle-right"></i>
+                            </a>
+                        </li>
+                        
+                        <!-- Botón Última Página -->
+                        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('condominos.estado_cuenta', id=depto.id, page=pagination.pages, per_page=per_page) }}">
+                                <i class="fa-solid fa-angles-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <!-- Información de Paginación -->
+                    <div class="text-center text-muted mt-2">
+                        <small>
+                            Mostrando {{ ((pagination.page - 1) * pagination.per_page) + 1 }} - 
+                            {{ [pagination.page * pagination.per_page, pagination.total]|min }} 
+                            de {{ pagination.total }} registros
+                        </small>
+                    </div>
+                </nav>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

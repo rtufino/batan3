@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, send_file
+from flask import Blueprint, render_template, redirect, url_for, flash, send_file, request
 from app.models import Departamento, PersonaContacto, Movimiento, Cuenta
 from app.forms import DepartamentoForm, PersonaContactoForm, PagoForm
 from app.extensions import db
@@ -159,12 +159,27 @@ def generar_mensualidad():
 @condominos_bp.route('/estado-cuenta/<int:id>')
 def estado_cuenta(id):
     depto = Departamento.query.get_or_404(id)
-    # Obtenemos todos los movimientos (Pagados y Pendientes) ordenados por fecha de emisión
-    movimientos = Movimiento.query.filter_by(departamento_id=id).order_by(Movimiento.fecha_emision.desc()).all()
+    
+    # Obtener parámetros de paginación
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    
+    # Validar per_page
+    if per_page not in [10, 25, 50]:
+        per_page = 10
+    
+    # Obtenemos los movimientos con paginación
+    pagination = Movimiento.query.filter_by(departamento_id=id)\
+        .order_by(Movimiento.fecha_emision.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+    
+    movimientos = pagination.items
     
     return render_template('condominos/estado_cuenta.html',
                            depto=depto,
-                           movimientos=movimientos)
+                           movimientos=movimientos,
+                           pagination=pagination,
+                           per_page=per_page)
 
 
 

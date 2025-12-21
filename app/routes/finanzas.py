@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, make_response
+from flask import Blueprint, render_template, redirect, url_for, flash, make_response, request
 from app.extensions import db
 from app.models import Movimiento, Departamento, Rubro, Cuenta, Proveedor
 from app.forms import ConfirmarPagoForm, IngresoForm, GastoForm, TransferenciaForm
@@ -124,9 +124,53 @@ def nuevo_gasto():
 # 1. RUTA PARA VER EL HISTORIAL
 @finanzas_bp.route('/historial')
 def historial():
-    # Obtenemos los últimos 50 movimientos ordenados por fecha de emisión descendente
-    movimientos = Movimiento.query.order_by(Movimiento.fecha_emision.desc()).limit(50).all()
-    return render_template('finanzas/historial.html', movimientos=movimientos)
+    # Obtener parámetros de la URL
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 12, type=int)
+    tipo_filter = request.args.get('tipo', '')
+    estado_filter = request.args.get('estado', '')
+    sort_by = request.args.get('sort_by', 'fecha_emision')
+    sort_order = request.args.get('sort_order', 'desc')
+    
+    # Validar per_page
+    if per_page not in [10, 12, 25, 50]:
+        per_page = 12
+    
+    # Construir la consulta base
+    query = Movimiento.query
+    
+    # Aplicar filtros
+    if tipo_filter:
+        query = query.filter_by(tipo=tipo_filter)
+    
+    if estado_filter:
+        query = query.filter_by(estado=estado_filter)
+    
+    # Aplicar ordenamiento
+    if sort_by == 'fecha_emision':
+        order_column = Movimiento.fecha_emision
+    elif sort_by == 'fecha_pago':
+        order_column = Movimiento.fecha_pago
+    else:
+        order_column = Movimiento.fecha_emision
+    
+    if sort_order == 'asc':
+        query = query.order_by(order_column.asc())
+    else:
+        query = query.order_by(order_column.desc())
+    
+    # Ejecutar paginación
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    movimientos = pagination.items
+    
+    return render_template('finanzas/historial.html',
+                         movimientos=movimientos,
+                         pagination=pagination,
+                         tipo_filter=tipo_filter,
+                         estado_filter=estado_filter,
+                         sort_by=sort_by,
+                         sort_order=sort_order,
+                         per_page=per_page)
 
 # 2. RUTA PARA DESCARGAR RECIBO INDIVIDUAL
 @finanzas_bp.route('/recibo/<int:id>')
