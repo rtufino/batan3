@@ -107,3 +107,9 @@ class PagoForm(FlaskForm):
     ])
     referencia = StringField('Número de Referencia/Transferencia')
     submit = SubmitField('Registrar Pago')
+
+class ConfirmarPagoForm(FlaskForm):
+    cuenta_id = SelectField('Cuenta de Origen/Destino', coerce=int, validators=[DataRequired()])
+    fecha_pago = DateField('Fecha del Movimiento', validators=[DataRequired()], default=datetime.now)
+    observacion = TextAreaField('Observaciones / Ref. Transferencia', validators=[Optional()])
+    submit = SubmitField('Confirmar Transacción')

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow border-0">
+            <div class="card-header {{ 'bg-success' if movimiento.tipo == 'INGRESO' else 'bg-danger' }} text-white text-center">
+                <h5 class="mb-0">Confirmar Pago: {{ movimiento.rubro.nombre }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <small class="text-muted d-block text-uppercase">Monto a Procesar</small>
+                    <h2 class="fw-bold">${{ "%.2f"|format(movimiento.monto) }}</h2>
+                    <p class="text-muted small">{{ movimiento.descripcion }}</p>
+                </div>
+
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label class="form-label">Cuenta de {{ 'Destino' if movimiento.tipo == 'INGRESO' else 'Origen' }}</label>
+                        {{ form.cuenta_id(class="form-select form-select-lg") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha de Efectivización</label>
+                        {{ form.fecha_pago(class="form-control", type="date") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notas / Referencia</label>
+                        {{ form.observacion(class="form-control", rows="2") }}
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">Finalizar Registro</button>
+                        <a href="{{ url_for('finanzas.historial') }}" class="btn btn-light">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

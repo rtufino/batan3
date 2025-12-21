@@ -118,19 +118,23 @@ def generar_mensualidad():
             db.session.add(nuevo_cargo)
             db.session.flush() # Para obtener el ID del movimiento
 
-            # 3. GENERACIÓN FÍSICA DEL PDF
-            pdf_content = generar_pdf_aviso(depto, nuevo_cargo, deuda_previa)
+            # 2. Generar PDF
+            pdf_bytes = generar_pdf_aviso(depto, nuevo_cargo, deuda_previa)
             
-            # Carpeta: static/uploads/avisos/2024/diciembre/
-            ruta_carpeta = os.path.join('app/static/uploads/avisos', f"{hoy.year}", f"{hoy.month}")
-            os.makedirs(ruta_carpeta, exist_ok=True)
+            # Carpeta estática: app/static/uploads/avisos/2025/12/
+            folder_rel = f"{hoy.year}/{hoy.month}"
+            folder_abs = os.path.join('app', 'static', 'uploads', 'avisos', folder_rel)
+            os.makedirs(folder_abs, exist_ok=True)
             
-            nombre_archivo = f"Aviso_{depto.numero}_{hoy.strftime('%m_%Y')}.pdf"
-            with open(os.path.join(ruta_carpeta, nombre_archivo), 'wb') as f:
-                f.write(pdf_content)
+            mes_anio_file = hoy.strftime('%m_%Y') # Para el nombre de archivo
+
+            filename = f"Aviso_{depto.numero}_{mes_anio_file}.pdf"
+            with open(os.path.join(folder_abs, filename), 'wb') as f:
+                f.write(pdf_bytes)
             
-            # Guardamos la ruta en el campo comprobante para descargarlo después
-            nuevo_cargo.comprobante_url = f"{hoy.year}/{hoy.month}/{nombre_archivo}"
+            # 3. Guardar la URL relativa en el modelo
+            nuevo_cargo.comprobante_url = f"{folder_rel}/{filename}"
+            db.session.commit()
 
             generados += 1
         else:

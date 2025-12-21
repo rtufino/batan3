@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, make_response
 from app.extensions import db
 from app.models import Movimiento, Departamento, Rubro, Cuenta, Proveedor
-from app.forms import IngresoForm, GastoForm
+from app.forms import ConfirmarPagoForm, IngresoForm, GastoForm
 from app.utils import generar_pdf_recibo
 from datetime import datetime
 
@@ -144,43 +144,50 @@ def descargar_recibo(id):
     
     return response
 
-# 3. RUTA PARA REGISTRAR PAGO DE MOVIMIENTO PENDIENTE
+# RUTA PARA REGISTRAR PAGO DE MOVIMIENTO PENDIENTE
 @finanzas_bp.route('/registrar-pago/<int:id>', methods=['GET', 'POST'])
 def registrar_pago(id):
     movimiento = Movimiento.query.get_or_404(id)
     
-    # Verificar que el movimiento esté pendiente
     if movimiento.estado != 'PENDIENTE':
         flash('Este movimiento ya ha sido pagado.', 'warning')
         return redirect(url_for('finanzas.historial'))
-    
-    # Obtener la cuenta asociada
-    cuenta = Cuenta.query.get(movimiento.cuenta_id)
-    
-    # Verificar fondos suficientes para egresos
-    if movimiento.tipo == 'EGRESO':
-        if cuenta.saldo < movimiento.monto:
-            flash(f'Fondos insuficientes en {cuenta.nombre}. Saldo disponible: ${cuenta.saldo:.2f}', 'danger')
+
+    # REDIRECCIÓN SI ES EXPENSA:
+    if movimiento.rubro and "Expensas Ordinarias" in movimiento.rubro.nombre:
+        return redirect(url_for('condominos.registrar_pago', movimiento_id=movimiento.id))
+
+    # FLUJO GENERAL PARA OTROS RUBROS:
+    form = ConfirmarPagoForm()
+    form.cuenta_id.choices = [(c.id, f"{c.nombre} (${c.saldo:.2f})") for c in Cuenta.query.all()]
+
+    if form.validate_on_submit():
+        cuenta = Cuenta.query.get(form.cuenta_id.data)
+        monto = movimiento.monto
+        
+        try:
+            movimiento.estado = 'PAGADO'
+            movimiento.cuenta_id = cuenta.id
+            # Convertimos date a datetime
+            movimiento.fecha_pago = datetime.combine(form.fecha_pago.data, datetime.min.time())
+            
+            if form.observacion.data:
+                movimiento.descripcion = f"{movimiento.descripcion} | Obs: {form.observacion.data}"
+            
+            # Afectar saldo según tipo
+            if movimiento.tipo == 'INGRESO':
+                cuenta.saldo += monto
+            else: # EGRESO
+                if cuenta.saldo < monto:
+                    flash(f'Saldo insuficiente en {cuenta.nombre}', 'danger')
+                    return render_template('finanzas/confirmar_pago.html', form=form, movimiento=movimiento)
+                cuenta.saldo -= monto
+            
+            db.session.commit()
+            flash('Transacción confirmada y saldo actualizado.', 'success')
             return redirect(url_for('finanzas.historial'))
-    
-    try:
-        # Actualizar el estado del movimiento
-        movimiento.estado = 'PAGADO'
-        movimiento.fecha_pago = datetime.now()
-        
-        # Actualizar el saldo de la cuenta
-        if movimiento.tipo == 'INGRESO':
-            cuenta.saldo += movimiento.monto
-        else:  # EGRESO
-            cuenta.saldo -= movimiento.monto
-        
-        db.session.commit()
-        
-        tipo_msg = 'Ingreso' if movimiento.tipo == 'INGRESO' else 'Gasto'
-        flash(f'{tipo_msg} registrado como pagado exitosamente: ${movimiento.monto:.2f}', 'success')
-        
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error al registrar el pago: {str(e)}', 'danger')
-    
-    return redirect(url_for('finanzas.historial'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error: {str(e)}', 'danger')
+
+    return render_template('finanzas/confirmar_pago.html', form=form, movimiento=movimiento)

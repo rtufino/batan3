@@ -71,7 +71,7 @@
                         <td class="text-end">
                             {% if m.estado == 'PENDIENTE' %}
                                 <a href="{{ url_for('finanzas.registrar_pago', id=m.id) }}" class="btn btn-sm btn-success me-1" title="Registrar Pago">
-                                    <i class="fa-solid fa-dollar-sign"></i> Pagar
+                                    <i class="fa-solid fa-dollar-sign"></i>
                                 </a>
                             {% endif %}
                             <a href="{{ url_for('finanzas.descargar_recibo', id=m.id) }}" target="_blank" class="btn btn-sm btn-secondary" title="Imprimir Recibo">
