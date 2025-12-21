@@ -1,6 +1,6 @@
 from flask import Flask
 from app.config import Config
-from app.extensions import db, migrate
+from app.extensions import db, migrate, mail
 
 def create_app(config_class=Config):
     # 1. Inicializar Flask
@@ -12,6 +12,7 @@ def create_app(config_class=Config):
     # 3. Inicializar extensiones con la app creada
     db.init_app(app)
     migrate.init_app(app, db)
+    mail.init_app(app)
 
     # 4. Registrar Blueprints (Rutas)
     from app.routes.main import main_bp

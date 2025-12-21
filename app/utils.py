@@ -1,5 +1,19 @@
 from fpdf import FPDF
 from io import BytesIO
+from flask_mail import Message
+from flask import current_app
+from app.extensions import mail
+from threading import Thread
+import locale
+
+# Configurar locale para español (para nombres de meses)
+try:
+    locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+except:
+    try:
+        locale.setlocale(locale.LC_TIME, 'es_EC.UTF-8')
+    except:
+        pass  # Si no está disponible, usar el locale por defecto
 
 class ReciboPDF(FPDF):
     def header(self):
@@ -141,3 +155,269 @@ def generar_pdf_aviso(depto, movimiento_actual, deuda_anterior):
     pdf.multi_cell(0, 5, "Favor realizar depósito o transferencia a la Cuenta Corriente del Banco Pichincha Nro. 2100XXXXXX a nombre de EDIFICIO BATAN 3. Enviar el comprobante por los canales oficiales.")
 
     return pdf.output(dest='S') # Retornamos los bytes
+
+# --- FUNCIONES DE NOTIFICACIÓN POR EMAIL ---
+
+def enviar_email_async(app, msg):
+    """
+    Envía el email en un hilo separado para no bloquear la aplicación.
+    """
+    with app.app_context():
+        try:
+            mail.send(msg)
+        except Exception as e:
+            # Log del error (en producción deberías usar logging)
+            print(f"Error al enviar email: {str(e)}")
+
+def enviar_email(destinatarios, asunto, cuerpo_texto, cuerpo_html=None, adjuntos=None):
+    """
+    Función genérica para enviar emails.
+    
+    Args:
+        destinatarios: Lista de emails o un solo email (string)
+        asunto: Asunto del email
+        cuerpo_texto: Versión en texto plano del mensaje
+        cuerpo_html: Versión HTML del mensaje (opcional)
+        adjuntos: Lista de tuplas (nombre_archivo, tipo_mime, datos_bytes)
+    """
+    app = current_app._get_current_object()
+    
+    # Asegurar que destinatarios sea una lista
+    if isinstance(destinatarios, str):
+        destinatarios = [destinatarios]
+    
+    # Crear el mensaje
+    msg = Message(
+        subject=app.config['MAIL_SUBJECT_PREFIX'] + asunto,
+        recipients=destinatarios,
+        body=cuerpo_texto,
+        html=cuerpo_html,
+        sender=app.config['MAIL_DEFAULT_SENDER']
+    )
+    
+    # Adjuntar archivos si existen
+    if adjuntos:
+        for nombre, tipo_mime, datos in adjuntos:
+            msg.attach(nombre, tipo_mime, datos)
+    
+    # Enviar en un hilo separado
+    thread = Thread(target=enviar_email_async, args=(app, msg))
+    thread.start()
+    
+    return thread
+
+def notificar_aviso_cobro(departamento, movimiento, pdf_bytes):
+    """
+    Envía el aviso de cobro mensual al copropietario.
+    
+    Args:
+        departamento: Objeto Departamento
+        movimiento: Objeto Movimiento con el cargo generado
+        pdf_bytes: Bytes del PDF generado
+    """
+    # Obtener el propietario o arrendatario responsable
+    persona_responsable = None
+    
+    if departamento.responsable_pago == 'PROPIETARIO':
+        persona_responsable = next((p for p in departamento.personas if p.rol == 'PROPIETARIO'), None)
+    else:
+        persona_responsable = next((p for p in departamento.personas if p.rol == 'ARRENDATARIO'), None)
+    
+    # Si no hay responsable o no tiene email, no enviar
+    if not persona_responsable or not persona_responsable.email or not persona_responsable.recibe_notificaciones:
+        return None
+    
+    # Preparar el contenido del email
+    # Obtener mes y año en español
+    meses_es = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    mes_nombre = meses_es[movimiento.fecha_emision.month]
+    mes_anio = f"{mes_nombre} {movimiento.fecha_emision.year}"
+    
+    asunto = f"Aviso de Cobro - {mes_anio}"
+    
+    cuerpo_texto = f"""
+Estimado/a {persona_responsable.nombre},
+
+Le informamos que se ha generado el aviso de cobro correspondiente al mes de {mes_anio}.
+
+DEPARTAMENTO: {departamento.numero}
+MONTO DEL MES: ${movimiento.monto:.2f}
+SALDO TOTAL: ${departamento.saldo_pendiente:.2f}
+
+Adjunto encontrará el detalle completo en formato PDF.
+
+Por favor, realice el pago a la brevedad posible según las instrucciones indicadas en el documento.
+
+Atentamente,
+Administración Edificio Batan 3
+"""
+    
+    cuerpo_html = f"""
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .header {{ background-color: #2c3e50; color: white; padding: 20px; text-align: center; }}
+        .content {{ padding: 20px; }}
+        .info-box {{ background-color: #ecf0f1; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+        .amount {{ font-size: 24px; font-weight: bold; color: #e74c3c; }}
+        .footer {{ background-color: #95a5a6; color: white; padding: 10px; text-align: center; font-size: 12px; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>EDIFICIO BATAN 3</h1>
+        <h2>Aviso de Cobro - {mes_anio}</h2>
+    </div>
+    
+    <div class="content">
+        <p>Estimado/a <strong>{persona_responsable.nombre}</strong>,</p>
+        
+        <p>Le informamos que se ha generado el aviso de cobro correspondiente al mes de <strong>{mes_anio}</strong>.</p>
+        
+        <div class="info-box">
+            <p><strong>DEPARTAMENTO:</strong> {departamento.numero}</p>
+            <p><strong>MONTO DEL MES:</strong> <span class="amount">${movimiento.monto:.2f}</span></p>
+            <p><strong>SALDO TOTAL:</strong> <span class="amount">${departamento.saldo_pendiente:.2f}</span></p>
+        </div>
+        
+        <p>Adjunto encontrará el detalle completo en formato PDF.</p>
+        
+        <p>Por favor, realice el pago a la brevedad posible según las instrucciones indicadas en el documento.</p>
+        
+        <p>Atentamente,<br>
+        <strong>Administración Edificio Batan 3</strong></p>
+    </div>
+    
+    <div class="footer">
+        <p>Este es un mensaje automático, por favor no responder a este correo.</p>
+    </div>
+</body>
+</html>
+"""
+    
+    # Preparar el adjunto
+    mes_anio_file = movimiento.fecha_emision.strftime('%m_%Y')
+    nombre_archivo = f"Aviso_Cobro_{departamento.numero}_{mes_anio_file}.pdf"
+    adjuntos = [(nombre_archivo, 'application/pdf', pdf_bytes)]
+    
+    # Enviar el email
+    return enviar_email(
+        destinatarios=persona_responsable.email,
+        asunto=asunto,
+        cuerpo_texto=cuerpo_texto,
+        cuerpo_html=cuerpo_html,
+        adjuntos=adjuntos
+    )
+
+def notificar_recibo_pago(departamento, movimiento, pdf_bytes):
+    """
+    Envía el recibo de pago al copropietario cuando se registra un pago.
+    
+    Args:
+        departamento: Objeto Departamento
+        movimiento: Objeto Movimiento con el pago registrado
+        pdf_bytes: Bytes del PDF del recibo generado
+    """
+    # Obtener el propietario o arrendatario responsable
+    persona_responsable = None
+    
+    if departamento.responsable_pago == 'PROPIETARIO':
+        persona_responsable = next((p for p in departamento.personas if p.rol == 'PROPIETARIO'), None)
+    else:
+        persona_responsable = next((p for p in departamento.personas if p.rol == 'ARRENDATARIO'), None)
+    
+    # Si no hay responsable o no tiene email, no enviar
+    if not persona_responsable or not persona_responsable.email or not persona_responsable.recibe_notificaciones:
+        return None
+    
+    # Preparar el contenido del email
+    fecha_pago = movimiento.fecha_pago.strftime('%d/%m/%Y')
+    
+    asunto = f"Recibo de Pago - Departamento {departamento.numero}"
+    
+    cuerpo_texto = f"""
+Estimado/a {persona_responsable.nombre},
+
+Le confirmamos que hemos registrado su pago exitosamente.
+
+DEPARTAMENTO: {departamento.numero}
+FECHA DE PAGO: {fecha_pago}
+MONTO PAGADO: ${movimiento.monto:.2f}
+CONCEPTO: {movimiento.descripcion}
+
+SALDO PENDIENTE ACTUAL: ${departamento.saldo_pendiente:.2f}
+
+Adjunto encontrará el recibo oficial en formato PDF.
+
+Gracias por su puntualidad.
+
+Atentamente,
+Administración Edificio Batan 3
+"""
+    
+    cuerpo_html = f"""
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .header {{ background-color: #27ae60; color: white; padding: 20px; text-align: center; }}
+        .content {{ padding: 20px; }}
+        .info-box {{ background-color: #d5f4e6; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #27ae60; }}
+        .amount {{ font-size: 24px; font-weight: bold; color: #27ae60; }}
+        .footer {{ background-color: #95a5a6; color: white; padding: 10px; text-align: center; font-size: 12px; }}
+        .checkmark {{ font-size: 48px; color: #27ae60; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="checkmark">✓</div>
+        <h1>EDIFICIO BATAN 3</h1>
+        <h2>Pago Registrado Exitosamente</h2>
+    </div>
+    
+    <div class="content">
+        <p>Estimado/a <strong>{persona_responsable.nombre}</strong>,</p>
+        
+        <p>Le confirmamos que hemos registrado su pago exitosamente.</p>
+        
+        <div class="info-box">
+            <p><strong>DEPARTAMENTO:</strong> {departamento.numero}</p>
+            <p><strong>FECHA DE PAGO:</strong> {fecha_pago}</p>
+            <p><strong>MONTO PAGADO:</strong> <span class="amount">${movimiento.monto:.2f}</span></p>
+            <p><strong>CONCEPTO:</strong> {movimiento.descripcion}</p>
+            <hr>
+            <p><strong>SALDO PENDIENTE ACTUAL:</strong> ${departamento.saldo_pendiente:.2f}</p>
+        </div>
+        
+        <p>Adjunto encontrará el recibo oficial en formato PDF.</p>
+        
+        <p><strong>Gracias por su puntualidad.</strong></p>
+        
+        <p>Atentamente,<br>
+        <strong>Administración Edificio Batan 3</strong></p>
+    </div>
+    
+    <div class="footer">
+        <p>Este es un mensaje automático, por favor no responder a este correo.</p>
+    </div>
+</body>
+</html>
+"""
+    
+    # Preparar el adjunto
+    nombre_archivo = f"Recibo_Pago_{departamento.numero}_{movimiento.id}.pdf"
+    adjuntos = [(nombre_archivo, 'application/pdf', pdf_bytes)]
+    
+    # Enviar el email
+    return enviar_email(
+        destinatarios=persona_responsable.email,
+        asunto=asunto,
+        cuerpo_texto=cuerpo_texto,
+        cuerpo_html=cuerpo_html,
+        adjuntos=adjuntos
+    )

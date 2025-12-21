@@ -5,7 +5,7 @@ from app.extensions import db
 from datetime import datetime
 from sqlalchemy import extract
 
-from app.utils import generar_pdf_aviso # Importamos la nueva función
+from app.utils import generar_pdf_aviso, notificar_aviso_cobro, notificar_recibo_pago, generar_pdf_recibo
 
 import os
 import io
@@ -136,6 +136,13 @@ def generar_mensualidad():
             nuevo_cargo.comprobante_url = f"{folder_rel}/{filename}"
             db.session.commit()
 
+            # 4. ENVIAR NOTIFICACIÓN POR EMAIL
+            try:
+                notificar_aviso_cobro(depto, nuevo_cargo, pdf_bytes)
+            except Exception as e:
+                # Si falla el email, no interrumpimos el proceso
+                print(f"Error al enviar email a {depto.numero}: {str(e)}")
+
             generados += 1
         else:
             omitidos += 1
@@ -176,7 +183,7 @@ def registrar_pago(movimiento_id):
         
         # 2. ACTUALIZACIÓN DEL SALDO DE LA CUENTA
         # Como el movimiento pasa de PENDIENTE a PAGADO, el dinero "entra" hoy.
-        cuenta.saldo += movimiento.monto 
+        cuenta.saldo += movimiento.monto
         
         # 3. Actualizar los datos del movimiento
         movimiento.estado = 'PAGADO'
@@ -192,7 +199,20 @@ def registrar_pago(movimiento_id):
             
         try:
             db.session.commit()
-            flash(f'¡Pago registrado! El saldo de la cuenta {cuenta.nombre} ha sido actualizado.', 'success')
+            
+            # 4. GENERAR Y ENVIAR RECIBO POR EMAIL
+            try:
+                # Generar el PDF del recibo
+                pdf_buffer = generar_pdf_recibo(movimiento)
+                pdf_bytes = pdf_buffer.getvalue()
+                
+                # Enviar notificación con el recibo adjunto
+                notificar_recibo_pago(depto, movimiento, pdf_bytes)
+            except Exception as e:
+                # Si falla el email, no interrumpimos el proceso
+                print(f"Error al enviar recibo por email: {str(e)}")
+            
+            flash(f'¡Pago registrado! El saldo de la cuenta {cuenta.nombre} ha sido actualizado. Se ha enviado el recibo por email.', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Error al actualizar saldo: {e}', 'danger')

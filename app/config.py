@@ -21,3 +21,16 @@ class Config:
     # Se guardarán en app/static/uploads/mantenimiento
     UPLOAD_FOLDER = os.path.join(basedir, 'static/uploads/mantenimiento')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # Límite de 16MB por subida para seguridad
+    
+    # Configuración de Flask-Mail
+    # Para Gmail, necesitas habilitar "Acceso de apps menos seguras" o usar "Contraseñas de aplicación"
+    MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'smtp.gmail.com'
+    MAIL_PORT = int(os.environ.get('MAIL_PORT') or 587)
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', 'on', '1']
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')  # Tu correo
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')  # Tu contraseña o contraseña de aplicación
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or 'noreply@batan3.com'
+    
+    # Configuración adicional para notificaciones
+    MAIL_SUBJECT_PREFIX = '[EDIFICIO BATAN 3] '
+    MAIL_ADMIN = os.environ.get('MAIL_ADMIN') or 'admin@batan3.com'
