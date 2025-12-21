@@ -8,45 +8,113 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { background-color: #f8f9fa; }
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+        }
+        
         .card-dashboard { border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        /* Main content wrapper to push footer down */
+        .main-content {
+            flex: 1 0 auto;
+        }
+        
+        /* Footer styles */
+        footer {
+            flex-shrink: 0;
+            margin-top: auto;
+        }
+        footer h5 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+            border-bottom: 2px solid #495057;
+            padding-bottom: 0.5rem;
+        }
+        footer a:hover {
+            color: #adb5bd !important;
+            transition: color 0.3s ease;
+        }
+        footer .container {
+            max-width: 1140px;
+        }
     </style>
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="main-content">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+            <div class="container">
+                <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
+                    <i class="fa-solid fa-building"></i> Batan3 Admin
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('finanzas.historial') }}"><i class="fa-solid fa-money-bill"></i> Finanzas</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('condominos.lista_departamentos') }}"><i class="fa-solid fa-users"></i> Condóminos</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('mantenimiento.inventario') }}"><i class="fa-solid fa-screwdriver-wrench"></i> Mantenimiento</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#"><i class="fa-solid fa-gear"></i> Config</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
-                <i class="fa-solid fa-building"></i> Batan3 Admin
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('finanzas.historial') }}"><i class="fa-solid fa-money-bill"></i> Finanzas</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('condominos.lista_departamentos') }}"><i class="fa-solid fa-users"></i> Condóminos</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('mantenimiento.inventario') }}"><i class="fa-solid fa-screwdriver-wrench"></i> Mantenimiento</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#"><i class="fa-solid fa-gear"></i> Config</a></li>
-                </ul>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <h5 class="mb-3"><i class="fa-solid fa-building"></i> Edificio Batan3</h5>
+                    <p class="mb-1"><i class="fa-solid fa-location-dot"></i> Andrade Marín E7-76 y Diego de Almagro</p>
+                    <p class="mb-0"><i class="fa-solid fa-envelope"></i> <a href="mailto:edificio.batan3@gmail.com" class="text-light text-decoration-none">edificio.batan3@gmail.com</a></p>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <h5 class="mb-3"><i class="fa-solid fa-user-tie"></i> Administración</h5>
+                    <p class="mb-1"><strong>Administradora:</strong> Mayra Araujo</p>
+                    <p class="mb-0"><i class="fa-solid fa-envelope"></i> <a href="mailto:araujo.mayra@gmail.com" class="text-light text-decoration-none">araujo.mayra@gmail.com</a></p>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <h5 class="mb-3"><i class="fa-solid fa-code"></i> Desarrollo</h5>
+                    <p class="mb-1"><strong>Desarrollador:</strong> Rodrigo Tufiño</p>
+                    <p class="mb-0"><i class="fa-solid fa-envelope"></i> <a href="mailto:rtufino@lisoft.net" class="text-light text-decoration-none">rtufino@lisoft.net</a></p>
+                </div>
+            </div>
+            <hr class="my-3 bg-secondary">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <p class="mb-0">
+                        <small>&copy; 2025 Edificio Batan3. Sistema de Administración.</small>
+                    </p>
+                </div>
             </div>
         </div>
-    </nav>
-
-    <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        {% block content %}{% endblock %}
-    </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -1,23 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{{ url_for('condominos.lista_departamentos') }}">Condóminos</a></li>
-            <li class="breadcrumb-item active">Estado de Cuenta</li>
-        </ol>
-    </nav>
-</div>
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div class="row">
-        <div class="col-md-6 mb4">
-            <h2 class="mb-0">Depto {{ depto.numero }}</h2>
-        </div>
-        <div class="col-md-6 mb4">
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('condominos.lista_departamentos') }}">Condóminos</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Estado de Cuenta {{ depto.numero }}</li>
+    </ol>
+</nav>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2 class="mb-0">Departamento {{ depto.numero }}</h2>
+    </div>
+    <div class="col-md-6 text-end">
         <span class="badge {% if depto.saldo_pendiente > 0 %}bg-danger{% else %}bg-success{% endif %} fs-5">
             Saldo Total: ${{ "%.2f"|format(depto.saldo_pendiente) }}
         </span>
-        </div>
     </div>
 </div>
 
@@ -45,47 +44,57 @@
             <div class="card-header bg-secondary text-white">Historial de Cargos y Pagos</div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Fecha Emisión</th>
-                            <th>Fecha Pago</th>
-                            <th>Descripción</th>
-                            <th>Estado</th>
-                            <th class="text-end">Monto</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for m in movimientos %}
-                        <tr>
-                            <td>{{ m.fecha_emision.strftime('%d/%m/%Y') }}</td>
-                            <td>
-                                {% if m.fecha_pago %}
-                                    {{ m.fecha_pago.strftime('%d/%m/%Y') }}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="d-block fw-bold">{{ m.descripcion }}</span>
-                                <small class="text-muted">{{ m.rubro.nombre }}</small>
-                            </td>
-                            <td>
-                                {% if m.estado == 'PENDIENTE' %}
-                                    <span class="badge bg-warning text-dark">Pendiente</span>
-                                    <a href="{{ url_for('condominos.registrar_pago', movimiento_id=m.id) }}" class="btn btn-sm btn-success ms-2">
-                                        <i class="fa-solid fa-cash-register"></i> Cobrar
-                                    </a>
-                                {% else %}
-                                    <span class="badge bg-success">Pagado</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end fw-bold {% if m.estado == 'PENDIENTE' %}text-danger{% else %}text-success{% endif %}">
-                                {{ "+" if m.estado == 'PENDIENTE' else "-" }} ${{ "%.2f"|format(m.monto) }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Fecha Emisión</th>
+                                            <th>Fecha Pago</th>
+                                            <th>Descripción</th>
+                                            <th>Estado</th>
+                                            <th class="text-end">Monto</th>
+                                            <th class="text-center">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for m in movimientos %}
+                                        <tr>
+                                            <td>{{ m.fecha_emision.strftime('%d/%m/%Y') }}</td>
+                                            <td>
+                                                {% if m.fecha_pago %}
+                                                    {{ m.fecha_pago.strftime('%d/%m/%Y') }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="d-block fw-bold">{{ m.descripcion }}</span>
+                                                <small class="text-muted">{{ m.rubro.nombre }}</small>
+                                            </td>
+                                            <td>
+                                                {% if m.estado == 'PENDIENTE' %}
+                                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                                {% else %}
+                                                    <span class="badge bg-success">Pagado</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end fw-bold {% if m.estado == 'PENDIENTE' %}text-danger{% else %}text-success{% endif %}">
+                                                {{ "+" if m.estado == 'PENDIENTE' else "-" }} ${{ "%.2f"|format(m.monto) }}
+                                            </td>
+                                            <td class="text-center">
+                                                {% if m.estado == 'PENDIENTE' %}
+                                                    <a href="{{ url_for('condominos.registrar_pago', movimiento_id=m.id) }}" class="btn btn-sm btn-success" title="Cobrar">
+                                                        <i class="fa-solid fa-cash-register"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('condominos.reimprimir_aviso', movimiento_id=m.id) }}" class="btn btn-sm btn-primary" title="Enviar Aviso de Cobro" target="_blank">
+                                                        <i class="fa-solid fa-envelope"></i>
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
             </div>
         </div>
     </div>

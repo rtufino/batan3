@@ -72,7 +72,15 @@ class EquipoForm(FlaskForm):
 
 class DepartamentoForm(FlaskForm):
     numero = StringField('Número de Departamento', validators=[DataRequired()])
-    piso = DecimalField('Piso', validators=[DataRequired()])
+    piso = SelectField('Piso', choices=[
+        ('-1', 'Subsuelo'),
+        ('0', 'Planta Baja'),
+        ('1', 'Primero'),
+        ('2', 'Segundo'),
+        ('3', 'Tercero'),
+        ('4', 'Cuarto'),
+        ('5', 'Quinto')
+    ], validators=[DataRequired()], coerce=int)
     alicuota = DecimalField('Porcentaje de Alícuota (%)', places=4, validators=[DataRequired()])
     valor_expensa = DecimalField('Valor de Expensa Mensual ($)', places=2, validators=[DataRequired()])
     esta_arrendado = SelectField('Estado de Ocupación', choices=[
@@ -119,5 +127,4 @@ class TransferenciaForm(FlaskForm):
     cuenta_destino_id = SelectField('Hacia Cuenta', coerce=int, validators=[DataRequired()])
     monto = DecimalField('Monto a Transferir ($)', places=2, validators=[DataRequired(), NumberRange(min=0.01)])
     fecha = DateField('Fecha', validators=[DataRequired()], default=datetime.now)
-    observacion = StringField('Observación / Referencia', render_kw={"placeholder": "Ej: Reposición de caja chica"})
     submit = SubmitField('Ejecutar Transferencia')

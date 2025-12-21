@@ -1,5 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('condominos.lista_departamentos') }}">Condóminos</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Editar {{ depto.numero }}</li>
+    </ol>
+</nav>
+
 <div class="row">
     <div class="col-md-5">
         <div class="card shadow-sm border-0">
@@ -9,10 +18,11 @@
             <div class="card-body">
                 <form method="POST">
                     {{ form.hidden_tag() }}
+                    <div class="mb-3">{{ form.numero.label }} {{ form.numero(class="form-control") }}</div>
                     <div class="mb-3">{{ form.valor_expensa.label }} {{ form.valor_expensa(class="form-control") }}</div>
                     <div class="row">
                         <div class="col-6 mb-3">{{ form.alicuota.label }} {{ form.alicuota(class="form-control") }}</div>
-                        <div class="col-6 mb-3">{{ form.piso.label }} {{ form.piso(class="form-control") }}</div>
+                        <div class="col-6 mb-3">{{ form.piso.label }} {{ form.piso(class="form-select") }}</div>
                     </div>
                     <div class="mb-3">{{ form.esta_arrendado.label }} {{ form.esta_arrendado(class="form-select") }}</div>
                     <div class="mb-3">{{ form.responsable_pago.label }} {{ form.responsable_pago(class="form-select") }}</div>

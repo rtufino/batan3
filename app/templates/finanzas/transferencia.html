@@ -30,10 +30,6 @@
                         <label class="form-label">Fecha</label>
                         {{ form.fecha(class="form-control", type="date") }}
                     </div>
-                    <div class="mb-4">
-                        {{ form.observacion.label(class="form-label") }}
-                        {{ form.observacion(class="form-control") }}
-                    </div>
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary btn-lg">Ejecutar Movimiento</button>
                         <a href="{{ url_for('finanzas.historial') }}" class="btn btn-light">Regresar</a>

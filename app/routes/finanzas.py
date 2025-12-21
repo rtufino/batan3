@@ -216,7 +216,7 @@ def nueva_transferencia():
             # 1. Movimiento de Salida (EGRESO)
             salida = Movimiento(
                 tipo='EGRESO', estado='PAGADO', monto=monto,
-                descripcion=f"Transferencia a {c_destino.nombre}: {form.observacion.data}",
+                descripcion=f"{c_origen.nombre} -> {c_destino.nombre}",
                 fecha_emision=datetime.combine(form.fecha.data, datetime.min.time()),
                 fecha_pago=datetime.combine(form.fecha.data, datetime.min.time()),
                 es_transferencia=True, cuenta_id=c_origen.id,
@@ -225,7 +225,7 @@ def nueva_transferencia():
             # 2. Movimiento de Entrada (INGRESO)
             entrada = Movimiento(
                 tipo='INGRESO', estado='PAGADO', monto=monto,
-                descripcion=f"Transferencia desde {c_origen.nombre}: {form.observacion.data}",
+                descripcion=f"{c_origen.nombre} -> {c_destino.nombre}",
                 fecha_emision=datetime.combine(form.fecha.data, datetime.min.time()),
                 fecha_pago=datetime.combine(form.fecha.data, datetime.min.time()),
                 es_transferencia=True, cuenta_id=c_destino.id,

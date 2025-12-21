@@ -45,9 +45,11 @@
                         </div>
                     </div>
 
-                    <div class="d-grid">
+                    <div class="d-grid gap-2">
                         {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <a href="{{ url_for('mantenimiento.inventario') }}" class="btn btn-outline-secondary">Cancelar</a>
                     </div>
+
                 </form>
             </div>
         </div>
