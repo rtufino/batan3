@@ -1,7 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="text-secondary"><i class="fa-solid fa-users-gear"></i> Gestión de Condóminos</h2>
+    
+    <form action="{{ url_for('condominos.generar_mensualidad') }}" method="POST" onsubmit="return confirm('¿Deseas generar los cargos de expensas para todos los departamentos este mes?');">
+        <button type="submit" class="btn btn-warning shadow-sm">
+            <i class="fa-solid fa-file-invoice-dollar"></i> Generar Expensas del Mes
+        </button>
+    </form>
 </div>
 
 <div class="row row-cols-1 row-cols-lg-2 g-4">
@@ -33,18 +40,24 @@
                         </div>
 
                         <div class="row mb-3">
-                            <div class="col-6">
+                            <div class="col-4">
                                 <small class="text-muted d-block">Expensa Fija</small>
                                 <span class="fw-bold fs-5 text-success">${{ "%.2f"|format(d.valor_expensa) }}</span>
                             </div>
-                            <div class="col-6">
+                            <div class="col-3">
                                 <small class="text-muted d-block">Alícuota</small>
                                 <span class="fw-bold">{{ "%.2f"|format(d.alicuota) }}%</span>
                             </div>
+                            <div class="col-5">
+                                <small class="text-muted d-block">Paga</small>
+                                <span class="fw-bold">{{ d.responsable_pago }}</span>
+                            </div>
                         </div>
-
+                        
                         <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
-                            <small class="text-muted">Paga: <strong>{{ d.responsable_pago }}</strong></small>
+                            <a href="{{ url_for('condominos.estado_cuenta', id=d.id) }}" class="btn btn-outline-dark btn-sm shadow-sm">
+                                <i class="fa-solid fa-list-check"></i> Estado de Cuenta
+                            </a>
                             <a href="{{ url_for('condominos.editar_departamento', id=d.id) }}" class="btn btn-primary btn-sm shadow-sm">
                                 <i class="fa-solid fa-user-pen"></i> Editar Info
                             </a>

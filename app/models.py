@@ -50,6 +50,27 @@ class Cuenta(db.Model):
     # Relación para saber qué movimientos afectaron esta cuenta
     movimientos = db.relationship('Movimiento', backref='cuenta', lazy=True)
 
+    # En app/models.py dentro de la clase Cuenta
+
+    # @property
+    # def saldo_actual(self):
+    #     """Suma ingresos pagados y resta egresos pagados"""
+    #     from app.models import Movimiento
+        
+    #     ingresos = db.session.query(db.func.sum(Movimiento.monto)).filter(
+    #         Movimiento.cuenta_id == self.id,
+    #         Movimiento.tipo == 'INGRESO',
+    #         Movimiento.estado == 'PAGADO'
+    #     ).scalar() or 0.0
+        
+    #     egresos = db.session.query(db.func.sum(Movimiento.monto)).filter(
+    #         Movimiento.cuenta_id == self.id,
+    #         Movimiento.tipo == 'EGRESO',
+    #         Movimiento.estado == 'PAGADO'
+    #     ).scalar() or 0.0
+        
+    #    return ingresos - egresos
+
     def __repr__(self):
         return f'<Cuenta {self.nombre}>'
 
@@ -70,6 +91,19 @@ class Departamento(db.Model):
     # Relaciones
     personas = db.relationship('PersonaContacto', backref='departamento', lazy=True)
     pagos = db.relationship('Movimiento', backref='departamento', lazy=True)
+
+    @property
+    def saldo_pendiente(self):
+        """Calcula el total de movimientos tipo INGRESO que están PENDIENTES"""
+        from app.models import Movimiento
+        # Sumamos todos los ingresos pendientes (deuda actual)
+        total_deuda = db.session.query(db.func.sum(Movimiento.monto)).filter(
+            Movimiento.departamento_id == self.id,
+            Movimiento.tipo == 'INGRESO',
+            Movimiento.estado == 'PENDIENTE'
+        ).scalar() or 0.0
+        
+        return total_deuda
 
     def __repr__(self):
         return f'<Depto {self.numero}>'

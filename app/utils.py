@@ -51,7 +51,7 @@ def generar_pdf_recibo(movimiento):
     
     pdf.set_font('Helvetica', '', 11)
     if movimiento.departamento:
-        texto_actor = f"PROPIETARIO DEPARTAMENTO {movimiento.departamento.numero}\n{movimiento.departamento.propietarios[0].nombre}"
+        texto_actor = f"PROPIETARIO DEPARTAMENTO {movimiento.departamento.numero}\n{movimiento.departamento.personas[0].nombre}"
     elif movimiento.proveedor:
         texto_actor = f"PROVEEDOR: {movimiento.proveedor.nombre}\nDOC: {movimiento.proveedor.ruc_cedula or 'S/N'}"
     else:

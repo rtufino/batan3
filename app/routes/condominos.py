@@ -1,7 +1,12 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from app.models import Departamento, PersonaContacto
-from app.forms import DepartamentoForm, PersonaContactoForm
+from app.models import Departamento, PersonaContacto, Movimiento, Cuenta
+from app.forms import DepartamentoForm, PersonaContactoForm, PagoForm
 from app.extensions import db
+from datetime import datetime
+from sqlalchemy import extract
+
+import os
+from werkzeug.utils import secure_filename
 
 condominos_bp = Blueprint('condominos', __name__, url_prefix='/condominos')
 
@@ -58,3 +63,110 @@ def gestionar_persona(depto_id=None, persona_id=None):
         return redirect(url_for('condominos.editar_departamento', id=depto.id))
         
     return render_template('condominos/persona_form.html', form=form, depto=depto)
+
+@condominos_bp.route('/generar-mensualidad', methods=['POST'])
+def generar_mensualidad():
+    hoy = datetime.now()
+    mes_actual = hoy.month
+    anio_actual = hoy.year
+    
+    # 1. Obtener el rubro de "Expensas Ordinarias"
+    from app.models import Rubro, Cuenta
+    rubro_expensa = Rubro.query.filter_by(nombre="Expensas Ordinarias").first()
+    # Usaremos la cuenta principal para proyectar el ingreso
+    cuenta_principal = Cuenta.query.first() 
+    
+    if not rubro_expensa:
+        flash("Error: No existe el rubro 'Expensas Ordinarias'.", "danger")
+        return redirect(url_for('condominos.lista_departamentos'))
+
+    departamentos = Departamento.query.all()
+    generados = 0
+    omitidos = 0
+
+    for depto in departamentos:
+        # 2. Verificar si ya se generó el cargo este mes para este depto
+        existe = Movimiento.query.filter(
+            Movimiento.departamento_id == depto.id,
+            Movimiento.rubro_id == rubro_expensa.id,
+            extract('month', Movimiento.fecha) == mes_actual,
+            extract('year', Movimiento.fecha) == anio_actual
+        ).first()
+
+        if not existe:
+            # 3. Crear el cargo pendiente (Deuda para el vecino)
+            nuevo_cargo = Movimiento(
+                tipo='INGRESO',
+                estado='PENDIENTE', # Es deuda hasta que se registre el pago
+                monto=depto.valor_expensa,
+                fecha=hoy,
+                descripcion=f"{depto.numero} - {hoy.strftime('%B %Y')}",
+                rubro_id=rubro_expensa.id,
+                departamento_id=depto.id,
+                cuenta_id=cuenta_principal.id
+            )
+            db.session.add(nuevo_cargo)
+            generados += 1
+        else:
+            omitidos += 1
+
+    db.session.commit()
+    
+    if generados > 0:
+        flash(f"Se generaron {generados} avisos de cobro con éxito. {omitidos} ya existían.", "success")
+    else:
+        flash(f"Las expensas de este mes ya fueron generadas anteriormente.", "info")
+        
+    return redirect(url_for('condominos.lista_departamentos'))
+
+@condominos_bp.route('/estado-cuenta/<int:id>')
+def estado_cuenta(id):
+    depto = Departamento.query.get_or_404(id)
+    # Obtenemos todos los movimientos (Pagados y Pendientes) ordenados por fecha
+    movimientos = Movimiento.query.filter_by(departamento_id=id).order_by(Movimiento.fecha.desc()).all()
+    
+    return render_template('condominos/estado_cuenta.html', 
+                           depto=depto, 
+                           movimientos=movimientos)
+
+
+
+@condominos_bp.route('/registrar-pago/<int:movimiento_id>', methods=['GET', 'POST'])
+def registrar_pago(movimiento_id):
+    movimiento = Movimiento.query.get_or_404(movimiento_id)
+    depto = movimiento.departamento
+    form = PagoForm()
+    
+    # Llenamos el select de cuentas bancarias
+    form.cuenta_id.choices = [(c.id, c.nombre) for c in Cuenta.query.all()]
+
+    if form.validate_on_submit():
+        # 1. Identificar la cuenta bancaria seleccionada
+        cuenta = Cuenta.query.get(form.cuenta_id.data)
+        
+        # 2. ACTUALIZACIÓN DEL SALDO DE LA CUENTA
+        # Como el movimiento pasa de PENDIENTE a PAGADO, el dinero "entra" hoy.
+        cuenta.saldo += movimiento.monto 
+        
+        # 3. Actualizar los datos del movimiento
+        movimiento.estado = 'PAGADO'
+        movimiento.fecha = form.fecha_pago.data
+        movimiento.cuenta_id = form.cuenta_id.data
+        
+        # Manejo de archivo (comprobante) si existe
+        if form.comprobante.data:
+            file = form.comprobante.data
+            filename = secure_filename(f"pago_{depto.numero}_{movimiento.id}.png")
+            file.save(os.path.join('app/static/uploads/pagos', filename))
+            movimiento.comprobante = filename
+            
+        try:
+            db.session.commit()
+            flash(f'¡Pago registrado! El saldo de la cuenta {cuenta.nombre} ha sido actualizado.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar saldo: {e}', 'danger')
+            
+        return redirect(url_for('condominos.estado_cuenta', id=depto.id))
+
+    return render_template('condominos/registrar_pago.html', form=form, movimiento=movimiento, depto=depto)

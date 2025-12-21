@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fa-solid fa-money-bill-transfer"></i> Registrar Pago - Depto {{ depto.numero }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border-0 shadow-sm mb-4">
+                    <h6 class="fw-bold mb-1">Detalle del Cobro:</h6>
+                    <p class="mb-0">{{ movimiento.descripcion }}<br>
+                    <strong>Monto a pagar: ${{ "%.2f"|format(movimiento.monto) }}</strong></p>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label class="form-label">Fecha en que se realizó el pago</label>
+                        {{ form.fecha_pago(class="form-control", type="date") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">¿A qué cuenta entró el dinero?</label>
+                        {{ form.cuenta_id(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Referencia / No. Comprobante</label>
+                        {{ form.referencia(class="form-control", placeholder="Ej: Transf. 12345") }}
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Adjuntar Comprobante (Opcional)</label>
+                        {{ form.comprobante(class="form-control") }}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-success btn-lg") }}
+                        <a href="{{ url_for('condominos.estado_cuenta', id=depto.id) }}" class="btn btn-light">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

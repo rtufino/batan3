@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask_wtf import FlaskForm
 from wtforms import StringField, DecimalField, DateField, SelectField, SubmitField, TextAreaField
 from flask_wtf.file import FileField, FileAllowed
@@ -96,3 +97,12 @@ class PersonaContactoForm(FlaskForm):
         (False, 'No')
     ], coerce=lambda x: str(x) == 'True')
     submit = SubmitField('Guardar Contacto')
+
+class PagoForm(FlaskForm):
+    fecha_pago = DateField('Fecha del Depósito/Transferencia', validators=[DataRequired()], default=datetime.now)
+    cuenta_id = SelectField('Cuenta de Destino', coerce=int, validators=[DataRequired()])
+    comprobante = FileField('Foto del Comprobante', validators=[
+        FileAllowed(['jpg', 'png', 'pdf'], 'Solo imágenes o PDF!')
+    ])
+    referencia = StringField('Número de Referencia/Transferencia')
+    submit = SubmitField('Registrar Pago')
