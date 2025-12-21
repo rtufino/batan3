@@ -5,6 +5,7 @@ from flask import current_app
 from app.extensions import mail
 from threading import Thread
 import locale
+import urllib.parse
 
 # Configurar locale para español (para nombres de meses)
 try:
@@ -421,3 +422,38 @@ Administración Edificio Batan 3
         cuerpo_html=cuerpo_html,
         adjuntos=adjuntos
     )
+
+def formatear_telefono_whatsapp(telefono):
+    """
+    Limpia y formatea el número para WhatsApp.
+    Si empieza con '0', asume que es local (Ecuador) y pone +593.
+    """
+    if not telefono:
+        return ""
+    
+    # Quitamos espacios y guiones para estandarizar
+    tel_limpio = telefono.replace(" ", "").replace("-", "")
+    
+    # Si el número empieza con '0' y tiene 10 dígitos (formato estándar Ecuador)
+    if tel_limpio.startswith("0"):
+        # Reemplazamos solo el primer '0' por '+593'
+        tel_limpio = "+593" + tel_limpio[1:]
+    
+    return tel_limpio
+
+def generar_link_whatsapp(persona, depto, monto_total):
+    tel = formatear_telefono_whatsapp(persona.telefono)
+    print(tel)
+    if not tel:
+        return None
+        
+    mensaje = (
+        f"Hola {persona.nombre}, le saluda la Administración del Edificio Batan 3. 🏢\n\n"
+        f"Le informamos que el estado de cuenta del *Departamento {depto.numero}* presenta un "
+        f"valor pendiente de *${monto_total:.2f}*.\n\n"
+        f"Agradecemos su gentil pago vía transferencia al Banco Pichincha Cta: 2100XXXXXX.\n"
+        f"Por favor, envíenos el comprobante por este medio. ¡Saludos! 👍"
+    )
+    
+    mensaje_codificado = urllib.parse.quote(mensaje)
+    return f"https://wa.me/{tel}?text={mensaje_codificado}"

@@ -78,22 +78,32 @@
                         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center bg-light p-2 rounded">
                             <div class="btn-group">
                                 <a href="{{ url_for('condominos.estado_cuenta', id=d.id) }}" class="btn btn-outline-dark btn-sm shadow-sm" title="Ver historial">
-                                    <i class="fa-solid fa-list-check"></i> Cuentas
+                                    <i class="fa-solid fa-list-check"></i> 
                                 </a>
                                 
-                                {# MODIFICACIÓN: Buscamos el último cargo pendiente para descargar el aviso #}
-                                {% set ultimo_pendiente = d.pagos|selectattr("estado", "equalto", "PENDIENTE")|sort(attribute='fecha', reverse=True)|first %}
-                               
+                                {# Lógica de Aviso de Cobro #}
+                                {% set ultimo_pendiente = d.pagos|selectattr("estado", "equalto", "PENDIENTE")|sort(attribute='fecha_emision', reverse=True)|first %}
+                            
                                 {% if ultimo_pendiente %}
                                     {% if ultimo_pendiente.comprobante %}
-                                        {# Si el archivo ya existe en el servidor #}
                                         <a href="{{ url_for('static', filename='uploads/avisos/' + ultimo_pendiente.comprobante) }}" target="_blank" class="btn btn-outline-danger btn-sm shadow-sm">
-                                            <i class="fa-solid fa-file-pdf"></i> Aviso
+                                            <i class="fa-solid fa-file-pdf"></i> 
                                         </a>
                                     {% else %}
-                                        {# Si el cargo existe pero no se generó el PDF (útil para registros viejos) #}
                                         <a href="{{ url_for('condominos.reimprimir_aviso', movimiento_id=ultimo_pendiente.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm shadow-sm">
-                                            <i class="fa-solid fa-print"></i> Aviso
+                                            <i class="fa-solid fa-print"></i> 
+                                        </a>
+                                    {% endif %}
+
+                                    {# NUEVO: Botón de WhatsApp utilizando la función de utils.py #}
+                                    {% set propietario = d.personas|selectattr("rol", "equalto", "PROPIETARIO")|first %}
+
+                                    {% if propietario and propietario.telefono and d.saldo_pendiente > 0 %}
+                                        <a href="{{ generar_link_whatsapp(propietario, d, d.saldo_pendiente) }}" 
+                                        target="_blank" 
+                                        class="btn btn-outline-success btn-sm shadow-sm" 
+                                        title="Cobrar por WhatsApp">
+                                            <i class="fa-brands fa-whatsapp"></i>
                                         </a>
                                     {% endif %}
                                 {% endif %}

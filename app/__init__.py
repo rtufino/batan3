@@ -1,6 +1,7 @@
 from flask import Flask
 from app.config import Config
 from app.extensions import db, migrate, mail
+from app.utils import generar_link_whatsapp
 
 def create_app(config_class=Config):
     # 1. Inicializar Flask
@@ -32,5 +33,9 @@ def create_app(config_class=Config):
     @app.shell_context_processor
     def make_shell_context():
         return {'db': db, 'app': app}
+    
+    @app.context_processor
+    def utility_processor():
+        return dict(generar_link_whatsapp=generar_link_whatsapp)
 
     return app
