@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.lista_rubros') }}">Configuración - Rubros</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ titulo }}</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-tag"></i> {{ titulo }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label fw-bold">
+                            <i class="fa-solid fa-signature"></i> Nombre del Rubro *
+                        </label>
+                        {{ form.nombre(class="form-control", placeholder="Ej: Agua Potable, Mantenimiento Ascensor") }}
+                        {% if form.nombre.errors %}
+                            <div class="text-danger small mt-1">{{ form.nombre.errors[0] }}</div>
+                        {% endif %}
+                        <small class="text-muted">
+                            Nombre descriptivo del rubro (debe ser único)
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="tipo" class="form-label fw-bold">
+                            <i class="fa-solid fa-arrows-left-right"></i> Tipo *
+                        </label>
+                        {{ form.tipo(class="form-select") }}
+                        {% if form.tipo.errors %}
+                            <div class="text-danger small mt-1">{{ form.tipo.errors[0] }}</div>
+                        {% endif %}
+                        <small class="text-muted">
+                            <strong>Ingreso:</strong> Para cobros y pagos recibidos. 
+                            <strong>Egreso:</strong> Para gastos y pagos realizados.
+                        </small>
+                    </div>
+
+                    {% if rubro and rubro.nombre == 'Expensas Ordinarias' %}
+                    <div class="alert alert-warning">
+                        <strong><i class="fa-solid fa-lock"></i> Rubro Protegido:</strong>
+                        Este rubro no se puede modificar porque es esencial para el sistema.
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('config.lista_rubros') }}" class="btn btn-secondary">
+                            <i class="fa-solid fa-times"></i> Cancelar
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Información adicional -->
+        <div class="alert alert-info mt-3">
+            <strong><i class="fa-solid fa-lightbulb"></i> Consejos:</strong>
+            <ul class="mb-0 mt-2">
+                <li>Usa nombres claros y descriptivos</li>
+                <li>Los rubros de INGRESO aparecerán al registrar cobros</li>
+                <li>Los rubros de EGRESO aparecerán al registrar gastos</li>
+                <li>No podrás eliminar rubros que tengan movimientos asociados</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -146,3 +146,11 @@ class ExpensaManualForm(FlaskForm):
     fecha_pago = DateField('Fecha de Pago', validators=[Optional()], format='%Y-%m-%d')
     descripcion = StringField('Descripción Adicional (Opcional)')
     submit = SubmitField('Guardar Expensa')
+
+class RubroForm(FlaskForm):
+    nombre = StringField('Nombre del Rubro', validators=[DataRequired()])
+    tipo = SelectField('Tipo', choices=[
+        ('INGRESO', 'Ingreso'),
+        ('EGRESO', 'Egreso')
+    ], validators=[DataRequired()])
+    submit = SubmitField('Guardar Rubro')
