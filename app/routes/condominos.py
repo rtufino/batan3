@@ -255,6 +255,82 @@ def reimprimir_aviso(movimiento_id):
         download_name=f"Aviso_{depto.numero}.pdf"
     )
 
+@condominos_bp.route('/enviar-aviso/<int:movimiento_id>', methods=['POST'])
+def enviar_aviso_email(movimiento_id):
+    movimiento = Movimiento.query.get_or_404(movimiento_id)
+    depto = movimiento.departamento
+    
+    # Verificar que el movimiento esté pendiente
+    if movimiento.estado != 'PENDIENTE':
+        flash('Solo se pueden enviar avisos de movimientos pendientes.', 'warning')
+        return redirect(url_for('condominos.estado_cuenta', id=depto.id))
+    
+    try:
+        # Calcular deuda anterior
+        deuda_anterior = depto.saldo_pendiente - float(movimiento.monto)
+        
+        # Generar PDF
+        pdf_bytes = generar_pdf_aviso(depto, movimiento, deuda_anterior)
+        
+        # Enviar email
+        notificar_aviso_cobro(depto, movimiento, pdf_bytes)
+        
+        flash(f'Aviso de cobro enviado por email exitosamente al departamento {depto.numero}', 'success')
+    except Exception as e:
+        flash(f'Error al enviar email: {str(e)}', 'danger')
+    
+    return redirect(url_for('condominos.estado_cuenta', id=depto.id))
+
+@condominos_bp.route('/enviar-recibo/<int:movimiento_id>', methods=['POST'])
+def enviar_recibo_email(movimiento_id):
+    movimiento = Movimiento.query.get_or_404(movimiento_id)
+    depto = movimiento.departamento
+    
+    # Verificar que el movimiento esté pagado
+    if movimiento.estado != 'PAGADO':
+        flash('Solo se pueden enviar recibos de movimientos pagados.', 'warning')
+        return redirect(url_for('condominos.estado_cuenta', id=depto.id))
+    
+    try:
+        # Generar PDF del recibo
+        pdf_buffer = generar_pdf_recibo(movimiento)
+        pdf_bytes = pdf_buffer.getvalue()
+        
+        # Enviar email con recibo
+        notificar_recibo_pago(depto, movimiento, pdf_bytes)
+        
+        flash(f'Recibo de pago reenviado por email exitosamente al departamento {depto.numero}', 'success')
+    except Exception as e:
+        flash(f'Error al enviar email: {str(e)}', 'danger')
+    
+    return redirect(url_for('condominos.estado_cuenta', id=depto.id))
+
+@condominos_bp.route('/eliminar-expensa/<int:movimiento_id>', methods=['POST'])
+def eliminar_expensa(movimiento_id):
+    movimiento = Movimiento.query.get_or_404(movimiento_id)
+    depto = movimiento.departamento
+    
+    # Verificar que el movimiento esté pendiente
+    if movimiento.estado != 'PENDIENTE':
+        flash('Solo se pueden eliminar movimientos pendientes.', 'warning')
+        return redirect(url_for('condominos.estado_cuenta', id=depto.id))
+    
+    try:
+        # Guardar información para el mensaje
+        descripcion = movimiento.descripcion
+        monto = float(movimiento.monto)
+        
+        # Eliminar el movimiento
+        db.session.delete(movimiento)
+        db.session.commit()
+        
+        flash(f'Expensa eliminada exitosamente: {descripcion} - ${monto:.2f}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar expensa: {str(e)}', 'danger')
+    
+    return redirect(url_for('condominos.estado_cuenta', id=depto.id))
+
 @condominos_bp.route('/agregar-expensa/<int:depto_id>', methods=['GET', 'POST'])
 def agregar_expensa_manual(depto_id):
     depto = Departamento.query.get_or_404(depto_id)

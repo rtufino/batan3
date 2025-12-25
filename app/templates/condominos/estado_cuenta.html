@@ -106,12 +106,31 @@
                                             <a href="{{ url_for('condominos.registrar_pago', movimiento_id=m.id) }}" class="btn btn-success" title="Cobrar">
                                                 <i class="fa-solid fa-cash-register"></i>
                                             </a>
-                                            <a href="{{ url_for('condominos.reimprimir_aviso', movimiento_id=m.id) }}" class="btn btn-primary" title="Enviar Aviso de Cobro" target="_blank">
-                                                <i class="fa-solid fa-envelope"></i>
+                                            <a href="{{ url_for('condominos.reimprimir_aviso', movimiento_id=m.id) }}" class="btn btn-secondary" title="Ver PDF Aviso" target="_blank">
+                                                <i class="fa-solid fa-file-pdf"></i>
                                             </a>
+                                            <form method="POST" action="{{ url_for('condominos.enviar_aviso_email', movimiento_id=m.id) }}" style="display: inline;">
+                                                <button type="submit" class="btn btn-primary btn-sm" title="Enviar Aviso por Email" onclick="return confirm('¿Enviar aviso de cobro por email?')">
+                                                    <i class="fa-solid fa-envelope"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('condominos.eliminar_expensa', movimiento_id=m.id) }}" style="display: inline;">
+                                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Expensa" onclick="return confirm('¿Está seguro de eliminar esta expensa? Esta acción no se puede deshacer.')">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     {% else %}
-                                        <span class="text-muted">-</span>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('finanzas.descargar_recibo', id=m.id) }}" class="btn btn-secondary" title="Ver PDF Recibo" target="_blank">
+                                                <i class="fa-solid fa-file-pdf"></i>
+                                            </a>
+                                            <form method="POST" action="{{ url_for('condominos.enviar_recibo_email', movimiento_id=m.id) }}" style="display: inline;">
+                                                <button type="submit" class="btn btn-success btn-sm" title="Reenviar Recibo por Email" onclick="return confirm('¿Reenviar recibo de pago por email?')">
+                                                    <i class="fa-solid fa-envelope"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     {% endif %}
                                 </td>
                             </tr>
