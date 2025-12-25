@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('condominos.lista_departamentos') }}">Condóminos</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Nuevo Departamento</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-building"></i> Crear Nuevo Departamento
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-info-circle"></i> 
+                    Complete los datos del nuevo departamento. Después de crearlo, podrá agregar personas de contacto.
+                </div>
+                
+                <form method="POST" action="{{ url_for('condominos.nuevo_departamento') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.numero.label(class="form-label fw-bold") }}
+                        {{ form.numero(class="form-control", placeholder="Ej: 1A, 2B, PB") }}
+                        {% if form.numero.errors %}
+                            <div class="text-danger small">{{ form.numero.errors[0] }}</div>
+                        {% endif %}
+                        <small class="text-muted">Identificador único del departamento</small>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.piso.label(class="form-label fw-bold") }}
+                            {{ form.piso(class="form-select") }}
+                            {% if form.piso.errors %}
+                                <div class="text-danger small">{{ form.piso.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.alicuota.label(class="form-label fw-bold") }}
+                            {{ form.alicuota(class="form-control", step="0.0001", placeholder="Ej: 9.0909") }}
+                            {% if form.alicuota.errors %}
+                                <div class="text-danger small">{{ form.alicuota.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">Porcentaje de participación</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.valor_expensa.label(class="form-label fw-bold") }}
+                        {{ form.valor_expensa(class="form-control", step="0.01", placeholder="Ej: 150.00") }}
+                        {% if form.valor_expensa.errors %}
+                            <div class="text-danger small">{{ form.valor_expensa.errors[0] }}</div>
+                        {% endif %}
+                        <small class="text-muted">Monto mensual de expensa ordinaria</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.esta_arrendado.label(class="form-label fw-bold") }}
+                        {{ form.esta_arrendado(class="form-select") }}
+                        {% if form.esta_arrendado.errors %}
+                            <div class="text-danger small">{{ form.esta_arrendado.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.responsable_pago.label(class="form-label fw-bold") }}
+                        {{ form.responsable_pago(class="form-select") }}
+                        {% if form.responsable_pago.errors %}
+                            <div class="text-danger small">{{ form.responsable_pago.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('condominos.lista_departamentos') }}" class="btn btn-secondary">
+                            <i class="fa-solid fa-times"></i> Cancelar
+                        </a>
+                        {{ form.submit(class="btn btn-primary", value="Crear Departamento") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

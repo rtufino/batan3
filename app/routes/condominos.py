@@ -1,9 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, send_file, request
 from app.models import Departamento, PersonaContacto, Movimiento, Cuenta, Rubro
-from app.forms import DepartamentoForm, PersonaContactoForm, PagoForm, ExpensaManualForm
+from app.forms import DepartamentoForm, DepartamentoEditForm, PersonaContactoForm, PagoForm, CargoManualForm
 from app.extensions import db
 from datetime import datetime
 from sqlalchemy import extract
+from sqlalchemy.exc import IntegrityError
 
 from app.utils import generar_pdf_aviso, notificar_aviso_cobro, notificar_recibo_pago, generar_pdf_recibo
 
@@ -19,22 +20,63 @@ def lista_departamentos():
     departamentos = Departamento.query.order_by(Departamento.numero).all()
     return render_template('condominos/lista.html', departamentos=departamentos)
 
+@condominos_bp.route('/nuevo', methods=['GET', 'POST'])
+def nuevo_departamento():
+    form = DepartamentoForm()
+    
+    if form.validate_on_submit():
+        # Verificar si el número ya existe
+        numero_existente = Departamento.query.filter_by(numero=form.numero.data).first()
+        
+        if numero_existente:
+            flash(f'El número de departamento "{form.numero.data}" ya está en uso. Por favor, elija otro número.', 'danger')
+            return render_template('condominos/nuevo.html', form=form)
+        
+        try:
+            nuevo_depto = Departamento(
+                numero=form.numero.data,
+                piso=int(form.piso.data),
+                alicuota=form.alicuota.data,
+                valor_expensa=form.valor_expensa.data,
+                esta_arrendado=form.esta_arrendado.data,
+                responsable_pago=form.responsable_pago.data
+            )
+            
+            db.session.add(nuevo_depto)
+            db.session.commit()
+            flash(f'Departamento {nuevo_depto.numero} creado correctamente.', 'success')
+            return redirect(url_for('condominos.lista_departamentos'))
+        except IntegrityError:
+            db.session.rollback()
+            flash(f'Error: El número de departamento "{form.numero.data}" ya existe. Por favor, elija otro número.', 'danger')
+            return render_template('condominos/nuevo.html', form=form)
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear departamento: {str(e)}', 'danger')
+            return render_template('condominos/nuevo.html', form=form)
+        
+    return render_template('condominos/nuevo.html', form=form)
+
 @condominos_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar_departamento(id):
     depto = Departamento.query.get_or_404(id)
-    form = DepartamentoForm(obj=depto)
+    form = DepartamentoEditForm(obj=depto)
     
     if form.validate_on_submit():
-        depto.numero = form.numero.data
-        depto.piso = form.piso.data
-        depto.alicuota = form.alicuota.data
-        depto.valor_expensa = form.valor_expensa.data
-        depto.esta_arrendado = form.esta_arrendado.data
-        depto.responsable_pago = form.responsable_pago.data
-        
-        db.session.commit()
-        flash(f'Departamento {depto.numero} actualizado correctamente.', 'success')
-        return redirect(url_for('condominos.lista_departamentos'))
+        try:
+            depto.piso = int(form.piso.data)
+            depto.alicuota = form.alicuota.data
+            depto.valor_expensa = form.valor_expensa.data
+            depto.esta_arrendado = form.esta_arrendado.data
+            depto.responsable_pago = form.responsable_pago.data
+            
+            db.session.commit()
+            flash(f'Departamento {depto.numero} actualizado correctamente.', 'success')
+            return redirect(url_for('condominos.lista_departamentos'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar departamento: {str(e)}', 'danger')
+            return render_template('condominos/editar.html', form=form, depto=depto)
         
     return render_template('condominos/editar.html', form=form, depto=depto)
 
@@ -305,8 +347,8 @@ def enviar_recibo_email(movimiento_id):
     
     return redirect(url_for('condominos.estado_cuenta', id=depto.id))
 
-@condominos_bp.route('/eliminar-expensa/<int:movimiento_id>', methods=['POST'])
-def eliminar_expensa(movimiento_id):
+@condominos_bp.route('/eliminar-cargo/<int:movimiento_id>', methods=['POST'])
+def eliminar_cargo(movimiento_id):
     movimiento = Movimiento.query.get_or_404(movimiento_id)
     depto = movimiento.departamento
     
@@ -324,17 +366,17 @@ def eliminar_expensa(movimiento_id):
         db.session.delete(movimiento)
         db.session.commit()
         
-        flash(f'Expensa eliminada exitosamente: {descripcion} - ${monto:.2f}', 'success')
+        flash(f'Cargo eliminado exitosamente: {descripcion} - ${monto:.2f}', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error al eliminar expensa: {str(e)}', 'danger')
+        flash(f'Error al eliminar cargo: {str(e)}', 'danger')
     
     return redirect(url_for('condominos.estado_cuenta', id=depto.id))
 
-@condominos_bp.route('/agregar-expensa/<int:depto_id>', methods=['GET', 'POST'])
-def agregar_expensa_manual(depto_id):
+@condominos_bp.route('/agregar-cargo/<int:depto_id>', methods=['GET', 'POST'])
+def agregar_cargo_manual(depto_id):
     depto = Departamento.query.get_or_404(depto_id)
-    form = ExpensaManualForm()
+    form = CargoManualForm()
     
     # Cargar opciones dinámicas
     form.rubro_id.choices = [(r.id, r.nombre) for r in Rubro.query.filter_by(tipo='INGRESO').all()]
@@ -354,14 +396,15 @@ def agregar_expensa_manual(depto_id):
         ).first()
         
         if existe:
-            flash(f'Ya existe un cargo de este rubro para {form.mes.data}/{form.anio.data}', 'warning')
-            return render_template('condominos/agregar_expensa.html', form=form, depto=depto)
+            rubro = Rubro.query.get(form.rubro_id.data)
+            flash(f'Ya existe un cargo de "{rubro.nombre}" para {form.mes.data}/{form.anio.data}. No se pueden registrar cargos duplicados del mismo rubro en el mismo mes.', 'warning')
+            return render_template('condominos/agregar_cargo.html', form=form, depto=depto)
         
         # 2. Validar que si está PAGADO, tenga cuenta y fecha
         if form.estado.data == 'PAGADO':
             if not form.cuenta_id.data or not form.fecha_pago.data:
                 flash('Para estado PAGADO debe seleccionar cuenta y fecha de pago', 'danger')
-                return render_template('condominos/agregar_expensa.html', form=form, depto=depto)
+                return render_template('condominos/agregar_cargo.html', form=form, depto=depto)
         
         # 3. Crear fecha de emisión (primer día del mes seleccionado)
         fecha_emision = datetime(form.anio.data, form.mes.data, 1)
@@ -424,7 +467,7 @@ def agregar_expensa_manual(depto_id):
         try:
             db.session.add(nuevo_cargo)
             db.session.commit()
-            flash(f'Expensa agregada exitosamente ({form.estado.data})', 'success')
+            flash(f'Cargo registrado exitosamente ({form.estado.data})', 'success')
             return redirect(url_for('condominos.estado_cuenta', id=depto.id))
         except Exception as e:
             db.session.rollback()
@@ -440,4 +483,4 @@ def agregar_expensa_manual(depto_id):
     if not form.fecha_pago.data:
         form.fecha_pago.data = datetime.now().date()
     
-    return render_template('condominos/agregar_expensa.html', form=form, depto=depto)
+    return render_template('condominos/agregar_cargo.html', form=form, depto=depto)

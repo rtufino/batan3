@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Agregar Expensa - Depto {{ depto.numero }}{% endblock %}
+{% block title %}Registrar Cargo - Depto {{ depto.numero }}{% endblock %}
 
 {% block content %}
 <!-- Breadcrumb -->
@@ -9,7 +9,7 @@
         <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
         <li class="breadcrumb-item"><a href="{{ url_for('condominos.lista_departamentos') }}">Condóminos</a></li>
         <li class="breadcrumb-item"><a href="{{ url_for('condominos.estado_cuenta', id=depto.id) }}">Estado de Cuenta {{ depto.numero }}</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Agregar Expensa</li>
+        <li class="breadcrumb-item active" aria-current="page">Registrar Cargo</li>
     </ol>
 </nav>
 
@@ -18,7 +18,7 @@
         <div class="card shadow-sm border-0">
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">
-                    <i class="fa-solid fa-plus-circle"></i> Agregar Expensa Manual
+                    <i class="fa-solid fa-plus-circle"></i> Registrar Cargo Manual
                 </h5>
             </div>
             <div class="card-body">
@@ -45,7 +45,7 @@
                 </div>
 
                 <!-- Formulario -->
-                <form method="POST" action="{{ url_for('condominos.agregar_expensa_manual', depto_id=depto.id) }}">
+                <form method="POST" action="{{ url_for('condominos.agregar_cargo_manual', depto_id=depto.id) }}">
                     {{ form.hidden_tag() }}
                     
                     <div class="row mb-3">
@@ -57,6 +57,10 @@
                             {% if form.rubro_id.errors %}
                                 <div class="text-danger small">{{ form.rubro_id.errors[0] }}</div>
                             {% endif %}
+                            <small class="text-muted">
+                                Puede registrar múltiples rubros diferentes en el mismo mes (ej: Expensa Ordinaria + Deuda). 
+                                No se permiten duplicados del mismo rubro en el mismo mes.
+                            </small>
                         </div>
                     </div>
 
@@ -146,7 +150,7 @@
                             <label for="descripcion" class="form-label fw-bold">
                                 <i class="fa-solid fa-comment"></i> Descripción Adicional (Opcional)
                             </label>
-                            {{ form.descripcion(class="form-control", placeholder="Ej: Expensa extraordinaria por reparación") }}
+                            {{ form.descripcion(class="form-control", placeholder="Ej: Cargo extraordinario por reparación") }}
                             <small class="text-muted">
                                 Si no se especifica, se generará automáticamente: "{{ depto.numero }} - MM / AAAA"
                             </small>

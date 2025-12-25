@@ -63,11 +63,34 @@ class DepartamentoForm(FlaskForm):
         ('3', 'Tercero'),
         ('4', 'Cuarto'),
         ('5', 'Quinto')
-    ], validators=[DataRequired()], coerce=int)
+    ], validators=[DataRequired()])
     alicuota = DecimalField('Porcentaje de Alícuota (%)', places=4, validators=[DataRequired()])
     valor_expensa = DecimalField('Valor de Expensa Mensual ($)', places=2, validators=[DataRequired()])
     esta_arrendado = SelectField('Estado de Ocupación', choices=[
-        (False, 'Habitado por Propietario'), 
+        (False, 'Habitado por Propietario'),
+        (True, 'Arrendado')
+    ], coerce=lambda x: str(x) == 'True')
+    responsable_pago = SelectField('Responsable del Pago', choices=[
+        ('PROPIETARIO', 'Propietario'),
+        ('ARRENDATARIO', 'Arrendatario')
+    ])
+    submit = SubmitField('Guardar Departamento')
+
+class DepartamentoEditForm(FlaskForm):
+    # Sin campo número - es inmutable
+    piso = SelectField('Piso', choices=[
+        ('-1', 'Subsuelo'),
+        ('0', 'Planta Baja'),
+        ('1', 'Primero'),
+        ('2', 'Segundo'),
+        ('3', 'Tercero'),
+        ('4', 'Cuarto'),
+        ('5', 'Quinto')
+    ], validators=[DataRequired()])
+    alicuota = DecimalField('Porcentaje de Alícuota (%)', places=4, validators=[DataRequired()])
+    valor_expensa = DecimalField('Valor de Expensa Mensual ($)', places=2, validators=[DataRequired()])
+    esta_arrendado = SelectField('Estado de Ocupación', choices=[
+        (False, 'Habitado por Propietario'),
         (True, 'Arrendado')
     ], coerce=lambda x: str(x) == 'True')
     responsable_pago = SelectField('Responsable del Pago', choices=[
@@ -112,7 +135,7 @@ class TransferenciaForm(FlaskForm):
     fecha = DateField('Fecha', validators=[DataRequired()], default=datetime.now)
     submit = SubmitField('Ejecutar Transferencia')
 
-class ExpensaManualForm(FlaskForm):
+class CargoManualForm(FlaskForm):
     rubro_id = SelectField('Concepto (Rubro)', coerce=int, validators=[DataRequired()])
     mes = SelectField('Mes', choices=[
         (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
@@ -128,7 +151,10 @@ class ExpensaManualForm(FlaskForm):
     cuenta_id = SelectField('Cuenta de Destino', coerce=int, validators=[Optional()])
     fecha_pago = DateField('Fecha de Pago', validators=[Optional()], format='%Y-%m-%d')
     descripcion = StringField('Descripción Adicional (Opcional)')
-    submit = SubmitField('Guardar Expensa')
+    submit = SubmitField('Registrar Cargo')
+
+# Mantener alias para compatibilidad con código existente
+ExpensaManualForm = CargoManualForm
 
 class RubroForm(FlaskForm):
     nombre = StringField('Nombre del Rubro', validators=[DataRequired()])

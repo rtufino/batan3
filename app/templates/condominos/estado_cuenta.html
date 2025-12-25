@@ -44,11 +44,11 @@
             <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
                 <span>Historial de Cargos y Pagos</span>
                 <div class="d-flex align-items-center gap-2">
-                    <!-- Botón Agregar Expensa -->
-                    <a href="{{ url_for('condominos.agregar_expensa_manual', depto_id=depto.id) }}"
+                    <!-- Botón Agregar Cargo -->
+                    <a href="{{ url_for('condominos.agregar_cargo_manual', depto_id=depto.id) }}"
                        class="btn btn-sm btn-success me-2"
-                       title="Agregar expensa manual">
-                        <i class="fa-solid fa-plus"></i> Agregar Expensa
+                       title="Registrar cargo manual">
+                        <i class="fa-solid fa-plus"></i> Registrar Cargo
                     </a>
                     
                     <!-- Selector de registros por página -->
@@ -114,8 +114,8 @@
                                                     <i class="fa-solid fa-envelope"></i>
                                                 </button>
                                             </form>
-                                            <form method="POST" action="{{ url_for('condominos.eliminar_expensa', movimiento_id=m.id) }}" style="display: inline;">
-                                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Expensa" onclick="return confirm('¿Está seguro de eliminar esta expensa? Esta acción no se puede deshacer.')">
+                                            <form method="POST" action="{{ url_for('condominos.eliminar_cargo', movimiento_id=m.id) }}" style="display: inline;">
+                                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Cargo" onclick="return confirm('¿Está seguro de eliminar este cargo? Esta acción no se puede deshacer.')">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </form>
