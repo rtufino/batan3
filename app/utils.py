@@ -144,7 +144,7 @@ def generar_pdf_aviso(depto, movimiento_actual, deuda_anterior):
 
     # Total
     pdf.set_font('Helvetica', 'B', 12)
-    total = movimiento_actual.monto + deuda_anterior
+    total = float(movimiento_actual.monto) + deuda_anterior
     pdf.cell(140, 10, "TOTAL A CANCELAR", border=1, fill=True)
     pdf.cell(50, 10, f"$ {total:.2f}", border=1, ln=1, align='R', fill=True)
 

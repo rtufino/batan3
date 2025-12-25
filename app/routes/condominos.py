@@ -198,7 +198,7 @@ def registrar_pago(movimiento_id):
         
         # 2. ACTUALIZACIÓN DEL SALDO DE LA CUENTA
         # Como el movimiento pasa de PENDIENTE a PAGADO, el dinero "entra" hoy.
-        cuenta.saldo += movimiento.monto
+        cuenta.saldo += float(movimiento.monto)
         
         # 3. Actualizar los datos del movimiento
         movimiento.estado = 'PAGADO'
@@ -241,8 +241,8 @@ def reimprimir_aviso(movimiento_id):
     movimiento = Movimiento.query.get_or_404(movimiento_id)
     depto = movimiento.departamento
     
-    # Deuda anterior = Saldo total actual - Monto de este movimiento específico
-    deuda_anterior = depto.saldo_pendiente - movimiento.monto
+    # Deuda anterior = Saldo total actual - Monto de este movimiento específico (convertir a float)
+    deuda_anterior = depto.saldo_pendiente - float(movimiento.monto)
     
     # Obtenemos los bytes desde la función en utils.py
     pdf_content = generar_pdf_aviso(depto, movimiento, deuda_anterior)
@@ -322,8 +322,8 @@ def agregar_expensa_manual(depto_id):
             db.session.add(nuevo_cargo)
             db.session.flush()
             
-            # Calcular deuda anterior
-            deuda_anterior = depto.saldo_pendiente - nuevo_cargo.monto
+            # Calcular deuda anterior (convertir a float para evitar error de tipos)
+            deuda_anterior = depto.saldo_pendiente - float(nuevo_cargo.monto)
             
             # Generar PDF
             pdf_bytes = generar_pdf_aviso(depto, nuevo_cargo, deuda_anterior)

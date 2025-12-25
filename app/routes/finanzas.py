@@ -208,7 +208,7 @@ def registrar_pago(id):
 
     if form.validate_on_submit():
         cuenta = Cuenta.query.get(form.cuenta_id.data)
-        monto = movimiento.monto
+        monto = float(movimiento.monto)  # Convertir Decimal a float
         
         try:
             movimiento.estado = 'PAGADO'
