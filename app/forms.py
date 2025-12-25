@@ -128,3 +128,21 @@ class TransferenciaForm(FlaskForm):
     monto = DecimalField('Monto a Transferir ($)', places=2, validators=[DataRequired(), NumberRange(min=0.01)])
     fecha = DateField('Fecha', validators=[DataRequired()], default=datetime.now)
     submit = SubmitField('Ejecutar Transferencia')
+
+class ExpensaManualForm(FlaskForm):
+    rubro_id = SelectField('Concepto (Rubro)', coerce=int, validators=[DataRequired()])
+    mes = SelectField('Mes', choices=[
+        (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
+        (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
+        (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
+    ], coerce=int, validators=[DataRequired()])
+    anio = SelectField('Año', coerce=int, validators=[DataRequired()])
+    monto = DecimalField('Monto ($)', places=2, validators=[DataRequired(), NumberRange(min=0.01)])
+    estado = SelectField('Estado', choices=[
+        ('PENDIENTE', 'Pendiente (Por Cobrar)'),
+        ('PAGADO', 'Pagado (Ya Cobrado)')
+    ], validators=[DataRequired()])
+    cuenta_id = SelectField('Cuenta de Destino', coerce=int, validators=[Optional()])
+    fecha_pago = DateField('Fecha de Pago', validators=[Optional()], format='%Y-%m-%d')
+    descripcion = StringField('Descripción Adicional (Opcional)')
+    submit = SubmitField('Guardar Expensa')

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, send_file, request
-from app.models import Departamento, PersonaContacto, Movimiento, Cuenta
-from app.forms import DepartamentoForm, PersonaContactoForm, PagoForm
+from app.models import Departamento, PersonaContacto, Movimiento, Cuenta, Rubro
+from app.forms import DepartamentoForm, PersonaContactoForm, PagoForm, ExpensaManualForm
 from app.extensions import db
 from datetime import datetime
 from sqlalchemy import extract
@@ -254,3 +254,114 @@ def reimprimir_aviso(movimiento_id):
         as_attachment=False, # False para que se abra en el navegador
         download_name=f"Aviso_{depto.numero}.pdf"
     )
+
+@condominos_bp.route('/agregar-expensa/<int:depto_id>', methods=['GET', 'POST'])
+def agregar_expensa_manual(depto_id):
+    depto = Departamento.query.get_or_404(depto_id)
+    form = ExpensaManualForm()
+    
+    # Cargar opciones dinámicas
+    form.rubro_id.choices = [(r.id, r.nombre) for r in Rubro.query.filter_by(tipo='INGRESO').all()]
+    form.cuenta_id.choices = [(c.id, f"{c.nombre} (${c.saldo:.2f})") for c in Cuenta.query.all()]
+    
+    # Generar opciones de años (últimos 2 años y próximos 2)
+    anio_actual = datetime.now().year
+    form.anio.choices = [(y, str(y)) for y in range(anio_actual - 2, anio_actual + 3)]
+    
+    if form.validate_on_submit():
+        # 1. Verificar duplicados
+        existe = Movimiento.query.filter(
+            Movimiento.departamento_id == depto.id,
+            Movimiento.rubro_id == form.rubro_id.data,
+            extract('month', Movimiento.fecha_emision) == form.mes.data,
+            extract('year', Movimiento.fecha_emision) == form.anio.data
+        ).first()
+        
+        if existe:
+            flash(f'Ya existe un cargo de este rubro para {form.mes.data}/{form.anio.data}', 'warning')
+            return render_template('condominos/agregar_expensa.html', form=form, depto=depto)
+        
+        # 2. Validar que si está PAGADO, tenga cuenta y fecha
+        if form.estado.data == 'PAGADO':
+            if not form.cuenta_id.data or not form.fecha_pago.data:
+                flash('Para estado PAGADO debe seleccionar cuenta y fecha de pago', 'danger')
+                return render_template('condominos/agregar_expensa.html', form=form, depto=depto)
+        
+        # 3. Crear fecha de emisión (primer día del mes seleccionado)
+        fecha_emision = datetime(form.anio.data, form.mes.data, 1)
+        
+        # 4. Obtener el monto del formulario
+        monto = form.monto.data
+        
+        # 5. Crear descripción
+        if form.descripcion.data:
+            descripcion = form.descripcion.data
+        else:
+            descripcion = f"{depto.numero} - {form.mes.data:02d} / {form.anio.data}"
+        
+        # 6. Crear movimiento
+        nuevo_cargo = Movimiento(
+            tipo='INGRESO',
+            estado=form.estado.data,
+            monto=monto,
+            fecha_emision=fecha_emision,
+            fecha_pago=datetime.combine(form.fecha_pago.data, datetime.min.time()) if form.estado.data == 'PAGADO' and form.fecha_pago.data else None,
+            descripcion=descripcion,
+            rubro_id=form.rubro_id.data,
+            departamento_id=depto.id,
+            cuenta_id=form.cuenta_id.data if form.estado.data == 'PAGADO' else Cuenta.query.first().id
+        )
+        
+        # 7. Si está PAGADO, actualizar saldo de cuenta
+        if form.estado.data == 'PAGADO':
+            cuenta = Cuenta.query.get(form.cuenta_id.data)
+            cuenta.saldo += float(monto)
+        
+        # 8. Si está PENDIENTE, generar PDF y enviar email
+        if form.estado.data == 'PENDIENTE':
+            db.session.add(nuevo_cargo)
+            db.session.flush()
+            
+            # Calcular deuda anterior
+            deuda_anterior = depto.saldo_pendiente - nuevo_cargo.monto
+            
+            # Generar PDF
+            pdf_bytes = generar_pdf_aviso(depto, nuevo_cargo, deuda_anterior)
+            
+            # Guardar PDF
+            folder_rel = f"{form.anio.data}/{form.mes.data}"
+            folder_abs = os.path.join('app', 'static', 'uploads', 'avisos', folder_rel)
+            os.makedirs(folder_abs, exist_ok=True)
+            
+            filename = f"Aviso_{depto.numero}_{form.mes.data:02d}_{form.anio.data}.pdf"
+            with open(os.path.join(folder_abs, filename), 'wb') as f:
+                f.write(pdf_bytes)
+            
+            nuevo_cargo.comprobante_url = f"{folder_rel}/{filename}"
+            
+            # Enviar email
+            try:
+                notificar_aviso_cobro(depto, nuevo_cargo, pdf_bytes)
+            except Exception as e:
+                print(f"Error al enviar email: {str(e)}")
+        
+        try:
+            db.session.add(nuevo_cargo)
+            db.session.commit()
+            flash(f'Expensa agregada exitosamente ({form.estado.data})', 'success')
+            return redirect(url_for('condominos.estado_cuenta', id=depto.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al guardar: {str(e)}', 'danger')
+    
+    # Pre-llenar valores por defecto
+    if not form.mes.data:
+        form.mes.data = datetime.now().month
+    if not form.anio.data:
+        form.anio.data = datetime.now().year
+    if not form.monto.data:
+        form.monto.data = depto.valor_expensa
+    if not form.fecha_pago.data:
+        form.fecha_pago.data = datetime.now().date()
+    
+    return render_template('condominos/agregar_expensa.html', form=form, depto=depto)

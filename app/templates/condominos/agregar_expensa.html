@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Agregar Expensa - Depto {{ depto.numero }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('condominos.lista_departamentos') }}">Condóminos</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('condominos.estado_cuenta', id=depto.id) }}">Estado de Cuenta {{ depto.numero }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Agregar Expensa</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-plus-circle"></i> Agregar Expensa Manual
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Información del Departamento -->
+                <div class="alert alert-info mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong><i class="fa-solid fa-building"></i> Departamento:</strong> {{ depto.numero }}<br>
+                            <strong><i class="fa-solid fa-user"></i> Propietario:</strong> 
+                            {% if depto.personas %}
+                                {{ depto.personas[0].nombre }}
+                            {% else %}
+                                Sin contacto
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <strong><i class="fa-solid fa-dollar-sign"></i> Valor Expensa:</strong> ${{ "%.2f"|format(depto.valor_expensa) }}<br>
+                            <strong><i class="fa-solid fa-exclamation-triangle"></i> Saldo Pendiente:</strong> 
+                            <span class="{% if depto.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
+                                ${{ "%.2f"|format(depto.saldo_pendiente) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario -->
+                <form method="POST" action="{{ url_for('condominos.agregar_expensa_manual', depto_id=depto.id) }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="rubro_id" class="form-label fw-bold">
+                                <i class="fa-solid fa-tag"></i> Concepto (Rubro) *
+                            </label>
+                            {{ form.rubro_id(class="form-select") }}
+                            {% if form.rubro_id.errors %}
+                                <div class="text-danger small">{{ form.rubro_id.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="mes" class="form-label fw-bold">
+                                <i class="fa-solid fa-calendar"></i> Mes *
+                            </label>
+                            {{ form.mes(class="form-select") }}
+                            {% if form.mes.errors %}
+                                <div class="text-danger small">{{ form.mes.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="anio" class="form-label fw-bold">
+                                <i class="fa-solid fa-calendar-days"></i> Año *
+                            </label>
+                            {{ form.anio(class="form-select") }}
+                            {% if form.anio.errors %}
+                                <div class="text-danger small">{{ form.anio.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="monto" class="form-label fw-bold">
+                                <i class="fa-solid fa-dollar-sign"></i> Monto ($) *
+                            </label>
+                            {{ form.monto(class="form-control", step="0.01", min="0.01") }}
+                            {% if form.monto.errors %}
+                                <div class="text-danger small">{{ form.monto.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">
+                                Valor predeterminado: ${{ "%.2f"|format(depto.valor_expensa) }} (puede modificarlo si es necesario)
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="estado" class="form-label fw-bold">
+                                <i class="fa-solid fa-circle-check"></i> Estado *
+                            </label>
+                            {{ form.estado(class="form-select", id="estado_select") }}
+                            {% if form.estado.errors %}
+                                <div class="text-danger small">{{ form.estado.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">
+                                <strong>Pendiente:</strong> Genera cargo por cobrar (envía aviso por email).
+                                <strong>Pagado:</strong> Registra como ya cobrado (actualiza saldo de cuenta).
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Campos condicionales para estado PAGADO -->
+                    <div id="campos_pagado" style="display: none;">
+                        <div class="alert alert-success">
+                            <strong><i class="fa-solid fa-info-circle"></i> Estado PAGADO:</strong> 
+                            Debe seleccionar la cuenta donde se recibió el dinero y la fecha del pago.
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="cuenta_id" class="form-label fw-bold">
+                                    <i class="fa-solid fa-wallet"></i> Cuenta de Destino *
+                                </label>
+                                {{ form.cuenta_id(class="form-select") }}
+                                {% if form.cuenta_id.errors %}
+                                    <div class="text-danger small">{{ form.cuenta_id.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="fecha_pago" class="form-label fw-bold">
+                                    <i class="fa-solid fa-calendar-check"></i> Fecha de Pago *
+                                </label>
+                                {{ form.fecha_pago(class="form-control", type="date") }}
+                                {% if form.fecha_pago.errors %}
+                                    <div class="text-danger small">{{ form.fecha_pago.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="descripcion" class="form-label fw-bold">
+                                <i class="fa-solid fa-comment"></i> Descripción Adicional (Opcional)
+                            </label>
+                            {{ form.descripcion(class="form-control", placeholder="Ej: Expensa extraordinaria por reparación") }}
+                            <small class="text-muted">
+                                Si no se especifica, se generará automáticamente: "{{ depto.numero }} - MM / AAAA"
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('condominos.estado_cuenta', id=depto.id) }}" class="btn btn-secondary">
+                            <i class="fa-solid fa-times"></i> Cancelar
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Mostrar/ocultar campos según el estado seleccionado
+    document.getElementById('estado_select').addEventListener('change', function() {
+        const camposPagado = document.getElementById('campos_pagado');
+        if (this.value === 'PAGADO') {
+            camposPagado.style.display = 'block';
+        } else {
+            camposPagado.style.display = 'none';
+        }
+    });
+
+    // Ejecutar al cargar la página para mantener el estado
+    window.addEventListener('DOMContentLoaded', function() {
+        const estadoSelect = document.getElementById('estado_select');
+        const camposPagado = document.getElementById('campos_pagado');
+        if (estadoSelect.value === 'PAGADO') {
+            camposPagado.style.display = 'block';
+        }
+    });
+</script>
+{% endblock %}
