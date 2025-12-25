@@ -1,62 +1,12 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, make_response, request
 from app.extensions import db
 from app.models import Movimiento, Departamento, Rubro, Cuenta, Proveedor
-from app.forms import ConfirmarPagoForm, IngresoForm, GastoForm, TransferenciaForm
+from app.forms import ConfirmarPagoForm, GastoForm, TransferenciaForm
 from app.utils import generar_pdf_recibo
 from datetime import datetime
 from sqlalchemy import func, extract
 
 finanzas_bp = Blueprint('finanzas', __name__, url_prefix='/finanzas')
-
-@finanzas_bp.route('/ingreso/nuevo', methods=['GET', 'POST'])
-def nuevo_ingreso():
-    form = IngresoForm()
-    
-    # 1. Cargar las opciones de los SelectFields dinámicamente desde la BD
-    # (Tuplas: valor, etiqueta)
-    form.departamento_id.choices = [(d.id, f"Depto {d.numero} - {d.personas[0].nombre}") for d in Departamento.query.all()]
-    
-    # Filtramos solo rubros de tipo INGRESO
-    form.rubro_id.choices = [(r.id, r.nombre) for r in Rubro.query.filter_by(tipo='INGRESO').all()]
-    
-    # Cargar cuentas
-    form.cuenta_id.choices = [(c.id, f"{c.nombre} ({c.tipo})") for c in Cuenta.query.all()]
-
-    # 2. Si el formulario se envió y es válido
-    if form.validate_on_submit():
-        # 1. Crear el movimiento
-        fecha_pago_dt = datetime.combine(form.fecha_pago.data, datetime.min.time())
-        nuevo_pago = Movimiento(
-            tipo='INGRESO',
-            estado='PAGADO', # Asumimos que si registras un ingreso, ya tienes el dinero
-            monto=form.monto.data,
-            fecha_emision=fecha_pago_dt,  # Para ingresos inmediatos, emisión = pago
-            fecha_pago=fecha_pago_dt,
-            descripcion=form.descripcion.data,
-            rubro_id=form.rubro_id.data,
-            departamento_id=form.departamento_id.data,
-            cuenta_id=form.cuenta_id.data
-        )
-
-        # 2. ACTUALIZAR EL SALDO DE LA CUENTA
-        cuenta = Cuenta.query.get(form.cuenta_id.data)
-        cuenta.saldo += float(form.monto.data) # Sumamos porque es Ingreso
-        
-        try:
-            db.session.add(nuevo_pago)
-            db.session.commit()
-            flash(f'Cobro registrado exitosamente: ${form.monto.data}', 'success')
-            return redirect(url_for('main.dashboard'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error al guardar en base de datos: {str(e)}', 'danger')
-
-    # 3. Si es GET o hubo error, mostramos el formulario
-    # Pre-llenamos la fecha con el día de hoy
-    if not form.fecha_pago.data:
-        form.fecha_pago.data = datetime.now().date()
-
-    return render_template('finanzas/nuevo_ingreso.html', form=form)
 
 @finanzas_bp.route('/gasto/nuevo', methods=['GET', 'POST'])
 def nuevo_gasto():
