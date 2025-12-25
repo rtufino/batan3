@@ -30,6 +30,9 @@
                     <h6 class="mb-0 fw-bold">{{ p.nombre }}</h6>
                     <small class="text-muted d-block">{{ p.rol }}</small>
                     <small class="d-block"><i class="fa-solid fa-envelope"></i> {{ p.email }}</small>
+                    {% if p.telefono %}
+                    <small class="d-block"><i class="fa-brands fa-whatsapp text-success"></i> {{ p.telefono }}</small>
+                    {% endif %}
                 </div>
                 {% endfor %}
                 <a href="{{ url_for('condominos.editar_departamento', id=depto.id) }}" class="btn btn-sm btn-outline-primary w-100 mt-2">

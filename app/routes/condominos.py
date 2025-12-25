@@ -112,17 +112,23 @@ def gestionar_persona(depto_id=None, persona_id=None):
 @condominos_bp.route('/generar-mensualidad', methods=['POST'])
 def generar_mensualidad():
     hoy = datetime.now()
-    # Formateamos el mes y año como "MM / YYYY"
-    mes_anio_formato = hoy.strftime('%m / %Y') 
-
+    
     mes_actual = hoy.month
     anio_actual = hoy.year
+    
+    # Diccionario de meses en español
+    meses_es = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    mes_nombre = meses_es[mes_actual]
     
     # 1. Obtener el rubro de "Expensas Ordinarias"
     from app.models import Rubro, Cuenta
     rubro_expensa = Rubro.query.filter_by(nombre="Expensas Ordinarias").first()
     # Usaremos la cuenta principal para proyectar el ingreso
-    cuenta_principal = Cuenta.query.first() 
+    cuenta_principal = Cuenta.query.first()
     
     if not rubro_expensa:
         flash("Error: No existe el rubro 'Expensas Ordinarias'.", "danger")
@@ -152,7 +158,7 @@ def generar_mensualidad():
                 monto=depto.valor_expensa,
                 fecha_emision=hoy,  # Fecha de generación de la expensa
                 fecha_pago=None,    # Aún no pagado
-                descripcion=f"{depto.numero} - {mes_anio_formato}",
+                descripcion=f"Expensa Ordinaria - {mes_nombre} / {anio_actual}",
                 rubro_id=rubro_expensa.id,
                 departamento_id=depto.id,
                 cuenta_id=cuenta_principal.id

@@ -37,5 +37,5 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
     
-    MAIL_SUBJECT_PREFIX = '[EDIFICIO BATAN 3] '
+    MAIL_SUBJECT_PREFIX = '[EDIFICIO BATAN III] '
     MAIL_ADMIN = os.environ.get('MAIL_ADMIN')

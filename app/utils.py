@@ -21,10 +21,10 @@ class ReciboPDF(FPDF):
         # Logo o Título Principal
         self.set_font('Helvetica', 'B', 16)
         # Cell(w, h, txt, border, ln, align)
-        self.cell(0, 10, 'EDIFICIO BATAN 3', border=0, ln=1, align='C')
+        self.cell(0, 10, 'EDIFICIO BATAN III', border=0, ln=1, align='C')
         
         self.set_font('Helvetica', '', 10)
-        self.cell(0, 5, 'RUC: 1790000000001 | Quito - Ecuador', border=0, ln=1, align='C')
+        self.cell(0, 5, 'RUC: 1792211255001 | Quito - Ecuador', border=0, ln=1, align='C')
         self.cell(0, 5, 'Comprobante de Transacción', border=0, ln=1, align='C')
         
         # Línea separadora
@@ -108,7 +108,7 @@ def generar_pdf_aviso(depto, movimiento_actual, deuda_anterior):
     
     # Encabezado
     pdf.set_font('Helvetica', 'B', 16)
-    pdf.cell(0, 10, 'EDIFICIO BATAN 3 - AVISO DE COBRO', ln=1, align='C')
+    pdf.cell(0, 10, 'EDIFICIO BATAN III - AVISO DE COBRO', ln=1, align='C')
     pdf.set_font('Helvetica', '', 10)
     pdf.cell(0, 5, f"Fecha de Emisión: {movimiento_actual.fecha_emision.strftime('%d/%m/%Y')}", ln=1, align='C')
     pdf.ln(10)
@@ -130,9 +130,8 @@ def generar_pdf_aviso(depto, movimiento_actual, deuda_anterior):
     pdf.cell(50, 8, "VALOR", border=1, ln=1, align='C')
 
     pdf.set_font('Helvetica', '', 11)
-    # Valor del mes actual
-    mes_anio_pdf = movimiento_actual.fecha_emision.strftime('%m / %Y')
-    pdf.cell(140, 8, f"Expensa Ordinaria - {mes_anio_pdf}", border=1)
+    # Valor del mes actual - usar la descripción del movimiento que ya tiene el formato correcto
+    pdf.cell(140, 8, movimiento_actual.descripcion, border=1)
     pdf.cell(50, 8, f"$ {movimiento_actual.monto:.2f}", border=1, ln=1, align='R')
 
     # Deuda anterior (Saldo pendiente antes de este cargo)
@@ -153,7 +152,24 @@ def generar_pdf_aviso(depto, movimiento_actual, deuda_anterior):
     pdf.set_font('Helvetica', 'B', 10)
     pdf.cell(0, 5, "INSTRUCCIONES DE PAGO:", ln=1)
     pdf.set_font('Helvetica', '', 9)
-    pdf.multi_cell(0, 5, "Favor realizar depósito o transferencia a la Cuenta Corriente del Banco Pichincha Nro. 2100XXXXXX a nombre de EDIFICIO BATAN 3. Enviar el comprobante por los canales oficiales.")
+    
+    # Buscar la cuenta del Banco Pichincha
+    from app.models import Cuenta
+    cuenta_pichincha = Cuenta.query.filter(Cuenta.nombre.ilike('%pichincha%')).first()
+    
+    if cuenta_pichincha and cuenta_pichincha.numero:
+        instrucciones = f"Favor realizar deposito o transferencia a la {cuenta_pichincha.nombre} Nro. {cuenta_pichincha.numero} a nombre de Mayra Araujo.\n\nEnviar el comprobante de pago al WhatsApp: 0992923858 o al correo: edificio.batan3@gmail.com"
+    else:
+        instrucciones = "Favor realizar deposito o transferencia a la Cuenta Corriente del Banco Pichincha a nombre de Mayra Araujo.\n\nEnviar el comprobante de pago al WhatsApp: 0992923858 o al correo: edificio.batan3@gmail.com"
+    
+    pdf.multi_cell(0, 5, instrucciones)
+    
+    # Recordatorio en rojo
+    pdf.ln(10)
+    pdf.set_text_color(200, 0, 0)  # Rojo
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.multi_cell(0, 6, "RECUERDE: Realizar el pago de su expensa dentro de los primeros 15 días del mes.", border=1, align='C', fill=False)
+    pdf.set_text_color(0, 0, 0)  # Volver a negro
 
     return pdf.output(dest='S') # Retornamos los bytes
 
@@ -209,24 +225,25 @@ def enviar_email(destinatarios, asunto, cuerpo_texto, cuerpo_html=None, adjuntos
 
 def notificar_aviso_cobro(departamento, movimiento, pdf_bytes):
     """
-    Envía el aviso de cobro mensual al copropietario.
+    Envía el aviso de cobro mensual a todas las personas relacionadas con el departamento.
     
     Args:
         departamento: Objeto Departamento
         movimiento: Objeto Movimiento con el cargo generado
         pdf_bytes: Bytes del PDF generado
     """
-    # Obtener el propietario o arrendatario responsable
-    persona_responsable = None
+    # Obtener todas las personas que reciben notificaciones
+    personas_notificar = [p for p in departamento.personas if p.recibe_notificaciones and p.email]
     
-    if departamento.responsable_pago == 'PROPIETARIO':
-        persona_responsable = next((p for p in departamento.personas if p.rol == 'PROPIETARIO'), None)
-    else:
-        persona_responsable = next((p for p in departamento.personas if p.rol == 'ARRENDATARIO'), None)
-    
-    # Si no hay responsable o no tiene email, no enviar
-    if not persona_responsable or not persona_responsable.email or not persona_responsable.recibe_notificaciones:
+    # Si no hay nadie para notificar, retornar
+    if not personas_notificar:
         return None
+    
+    # Obtener emails de todas las personas
+    destinatarios = [p.email for p in personas_notificar]
+    
+    # Usar el nombre del primer contacto para el saludo
+    nombre_saludo = personas_notificar[0].nombre
     
     # Preparar el contenido del email
     # Obtener mes y año en español
@@ -241,7 +258,7 @@ def notificar_aviso_cobro(departamento, movimiento, pdf_bytes):
     asunto = f"Aviso de Cobro - {mes_anio}"
     
     cuerpo_texto = f"""
-Estimado/a {persona_responsable.nombre},
+Estimado/a {nombre_saludo},
 
 Le informamos que se ha generado el aviso de cobro correspondiente al mes de {mes_anio}.
 
@@ -254,7 +271,7 @@ Adjunto encontrará el detalle completo en formato PDF.
 Por favor, realice el pago a la brevedad posible según las instrucciones indicadas en el documento.
 
 Atentamente,
-Administración Edificio Batan 3
+Administración Edificio Batan III
 """
     
     cuerpo_html = f"""
@@ -266,17 +283,18 @@ Administración Edificio Batan 3
         .content {{ padding: 20px; }}
         .info-box {{ background-color: #ecf0f1; padding: 15px; border-radius: 5px; margin: 20px 0; }}
         .amount {{ font-size: 24px; font-weight: bold; color: #e74c3c; }}
+        .reminder {{ background-color: #ffebee; color: #c62828; padding: 15px; border-left: 5px solid #c62828; margin: 20px 0; font-weight: bold; text-align: center; }}
         .footer {{ background-color: #95a5a6; color: white; padding: 10px; text-align: center; font-size: 12px; }}
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>EDIFICIO BATAN 3</h1>
+        <h1>EDIFICIO BATAN III</h1>
         <h2>Aviso de Cobro - {mes_anio}</h2>
     </div>
     
     <div class="content">
-        <p>Estimado/a <strong>{persona_responsable.nombre}</strong>,</p>
+        <p>Estimado/a <strong>{nombre_saludo}</strong>,</p>
         
         <p>Le informamos que se ha generado el aviso de cobro correspondiente al mes de <strong>{mes_anio}</strong>.</p>
         
@@ -286,16 +304,18 @@ Administración Edificio Batan 3
             <p><strong>SALDO TOTAL:</strong> <span class="amount">${departamento.saldo_pendiente:.2f}</span></p>
         </div>
         
+        <div class="reminder">
+            ⚠️ RECUERDE: Realizar el pago de su expensa dentro de los primeros 15 días del mes.
+        </div>
+        
         <p>Adjunto encontrará el detalle completo en formato PDF.</p>
-        
-        <p>Por favor, realice el pago a la brevedad posible según las instrucciones indicadas en el documento.</p>
-        
+         
         <p>Atentamente,<br>
-        <strong>Administración Edificio Batan 3</strong></p>
+        <strong>Administración Edificio Batan III</strong></p>
     </div>
     
     <div class="footer">
-        <p>Este es un mensaje automático, por favor no responder a este correo.</p>
+        <p>Este es un mensaje automático generado por el Sistema de Administración.</p>
     </div>
 </body>
 </html>
@@ -306,9 +326,9 @@ Administración Edificio Batan 3
     nombre_archivo = f"Aviso_Cobro_{departamento.numero}_{mes_anio_file}.pdf"
     adjuntos = [(nombre_archivo, 'application/pdf', pdf_bytes)]
     
-    # Enviar el email
+    # Enviar el email a todos los destinatarios
     return enviar_email(
-        destinatarios=persona_responsable.email,
+        destinatarios=destinatarios,
         asunto=asunto,
         cuerpo_texto=cuerpo_texto,
         cuerpo_html=cuerpo_html,
@@ -317,24 +337,25 @@ Administración Edificio Batan 3
 
 def notificar_recibo_pago(departamento, movimiento, pdf_bytes):
     """
-    Envía el recibo de pago al copropietario cuando se registra un pago.
+    Envía el recibo de pago a todas las personas relacionadas con el departamento.
     
     Args:
         departamento: Objeto Departamento
         movimiento: Objeto Movimiento con el pago registrado
         pdf_bytes: Bytes del PDF del recibo generado
     """
-    # Obtener el propietario o arrendatario responsable
-    persona_responsable = None
+    # Obtener todas las personas que reciben notificaciones
+    personas_notificar = [p for p in departamento.personas if p.recibe_notificaciones and p.email]
     
-    if departamento.responsable_pago == 'PROPIETARIO':
-        persona_responsable = next((p for p in departamento.personas if p.rol == 'PROPIETARIO'), None)
-    else:
-        persona_responsable = next((p for p in departamento.personas if p.rol == 'ARRENDATARIO'), None)
-    
-    # Si no hay responsable o no tiene email, no enviar
-    if not persona_responsable or not persona_responsable.email or not persona_responsable.recibe_notificaciones:
+    # Si no hay nadie para notificar, retornar
+    if not personas_notificar:
         return None
+    
+    # Obtener emails de todas las personas
+    destinatarios = [p.email for p in personas_notificar]
+    
+    # Usar el nombre del primer contacto para el saludo
+    nombre_saludo = personas_notificar[0].nombre
     
     # Preparar el contenido del email
     fecha_pago = movimiento.fecha_pago.strftime('%d/%m/%Y')
@@ -342,7 +363,7 @@ def notificar_recibo_pago(departamento, movimiento, pdf_bytes):
     asunto = f"Recibo de Pago - Departamento {departamento.numero}"
     
     cuerpo_texto = f"""
-Estimado/a {persona_responsable.nombre},
+Estimado/a {nombre_saludo},
 
 Le confirmamos que hemos registrado su pago exitosamente.
 
@@ -358,7 +379,7 @@ Adjunto encontrará el recibo oficial en formato PDF.
 Gracias por su puntualidad.
 
 Atentamente,
-Administración Edificio Batan 3
+Administración Edificio Batan III
 """
     
     cuerpo_html = f"""
@@ -377,12 +398,12 @@ Administración Edificio Batan 3
 <body>
     <div class="header">
         <div class="checkmark">✓</div>
-        <h1>EDIFICIO BATAN 3</h1>
+        <h1>EDIFICIO BATAN III</h1>
         <h2>Pago Registrado Exitosamente</h2>
     </div>
     
     <div class="content">
-        <p>Estimado/a <strong>{persona_responsable.nombre}</strong>,</p>
+        <p>Estimado/a <strong>{nombre_saludo}</strong>,</p>
         
         <p>Le confirmamos que hemos registrado su pago exitosamente.</p>
         
@@ -400,11 +421,11 @@ Administración Edificio Batan 3
         <p><strong>Gracias por su puntualidad.</strong></p>
         
         <p>Atentamente,<br>
-        <strong>Administración Edificio Batan 3</strong></p>
+        <strong>Administración Edificio Batan III</strong></p>
     </div>
     
     <div class="footer">
-        <p>Este es un mensaje automático, por favor no responder a este correo.</p>
+        <p>Este es un mensaje automático generado por el Sistema de Administración.</p>
     </div>
 </body>
 </html>
@@ -414,9 +435,9 @@ Administración Edificio Batan 3
     nombre_archivo = f"Recibo_Pago_{departamento.numero}_{movimiento.id}.pdf"
     adjuntos = [(nombre_archivo, 'application/pdf', pdf_bytes)]
     
-    # Enviar el email
+    # Enviar el email a todos los destinatarios
     return enviar_email(
-        destinatarios=persona_responsable.email,
+        destinatarios=destinatarios,
         asunto=asunto,
         cuerpo_texto=cuerpo_texto,
         cuerpo_html=cuerpo_html,
@@ -448,7 +469,7 @@ def generar_link_whatsapp(persona, depto, monto_total):
         return None
         
     mensaje = (
-        f"Hola {persona.nombre}, le saluda la Administración del Edificio Batan 3. 🏢\n\n"
+        f"Hola {persona.nombre}, le saluda la Administración del Edificio Batan III. 🏢\n\n"
         f"Le informamos que el estado de cuenta del *Departamento {depto.numero}* presenta un "
         f"valor pendiente de *${monto_total:.2f}*.\n\n"
         f"Agradecemos su gentil pago vía transferencia al Banco Pichincha Cta: 2100XXXXXX.\n"
