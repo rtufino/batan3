@@ -1,8 +1,8 @@
-"""Agregar valor expensa
+"""Migracion inicial para postgres
 
-Revision ID: 7645a7a15c56
+Revision ID: 9c36dff2886c
 Revises: 
-Create Date: 2025-12-20 17:32:03.679223
+Create Date: 2025-12-24 16:51:03.218324
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '7645a7a15c56'
+revision = '9c36dff2886c'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -70,7 +70,8 @@ def upgrade():
     )
     op.create_table('movimiento',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('fecha', sa.DateTime(), nullable=True),
+    sa.Column('fecha_emision', sa.DateTime(), nullable=False),
+    sa.Column('fecha_pago', sa.DateTime(), nullable=True),
     sa.Column('tipo', sa.String(length=10), nullable=False),
     sa.Column('monto', sa.Float(), nullable=False),
     sa.Column('descripcion', sa.String(length=200), nullable=True),

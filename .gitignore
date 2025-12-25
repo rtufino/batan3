@@ -10,3 +10,6 @@ seed.py
 uploads
 plans
 deployment
+.devcontainer
+server.txt
+.vscode

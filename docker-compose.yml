@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:16
+    container_name: batan3_db
+    restart: always
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: batan3_app
+    ports:
+      - "5000:5000"
+    tty: true
+    stdin_open: true
+    volumes:
+      - .:/workspaces/batan3:cached
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
