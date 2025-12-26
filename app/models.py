@@ -17,6 +17,93 @@ class ConfiguracionFiscal(db.Model):
     def __repr__(self):
         return f'<SBU {self.anio}: ${self.valor_sbu}>'
 
+class Parametro(db.Model):
+    """
+    Tabla de parámetros del sistema para controlar aspectos configurables.
+    Permite almacenar valores de diferentes tipos (texto, número, booleano, fecha).
+    """
+    __tablename__ = 'parametro'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    clave = db.Column(db.String(100), unique=True, nullable=False)  # Identificador único del parámetro
+    valor = db.Column(db.Text, nullable=True)  # Valor almacenado como texto
+    tipo = db.Column(db.String(20), nullable=False, default='TEXT')  # TEXT, NUMBER, BOOLEAN, DATE, JSON
+    descripcion = db.Column(db.String(255), nullable=True)  # Descripción del parámetro
+    categoria = db.Column(db.String(50), nullable=True)  # Para agrupar parámetros: GENERAL, NOTIFICACIONES, FINANZAS, etc.
+    editable = db.Column(db.Boolean, default=True)  # Si el usuario puede editarlo desde la interfaz
+    fecha_modificacion = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    def __repr__(self):
+        return f'<Parametro {self.clave}: {self.valor}>'
+    
+    def get_valor_typed(self):
+        """Retorna el valor convertido al tipo correcto"""
+        if self.valor is None:
+            return None
+        
+        if self.tipo == 'NUMBER':
+            try:
+                return float(self.valor)
+            except (ValueError, TypeError):
+                return 0.0
+        elif self.tipo == 'BOOLEAN':
+            return self.valor.lower() in ('true', '1', 'yes', 'si', 'sí')
+        elif self.tipo == 'DATE':
+            try:
+                return datetime.strptime(self.valor, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                return None
+        elif self.tipo == 'JSON':
+            try:
+                import json
+                return json.loads(self.valor)
+            except (ValueError, TypeError):
+                return {}
+        else:  # TEXT
+            return self.valor
+    
+    @staticmethod
+    def get_parametro(clave, default=None):
+        """Método helper para obtener un parámetro por su clave"""
+        param = Parametro.query.filter_by(clave=clave).first()
+        if param:
+            return param.get_valor_typed()
+        return default
+    
+    @staticmethod
+    def set_parametro(clave, valor, tipo='TEXT', descripcion=None, categoria='GENERAL'):
+        """Método helper para crear o actualizar un parámetro"""
+        param = Parametro.query.filter_by(clave=clave).first()
+        
+        # Convertir el valor a string para almacenamiento
+        if tipo == 'BOOLEAN':
+            valor_str = 'true' if valor else 'false'
+        elif tipo == 'DATE':
+            valor_str = valor.strftime('%Y-%m-%d') if hasattr(valor, 'strftime') else str(valor)
+        elif tipo == 'JSON':
+            import json
+            valor_str = json.dumps(valor)
+        else:
+            valor_str = str(valor)
+        
+        if param:
+            param.valor = valor_str
+            param.tipo = tipo
+            if descripcion:
+                param.descripcion = descripcion
+            param.fecha_modificacion = datetime.now()
+        else:
+            param = Parametro(
+                clave=clave,
+                valor=valor_str,
+                tipo=tipo,
+                descripcion=descripcion,
+                categoria=categoria
+            )
+            db.session.add(param)
+        
+        return param
+
 class Rubro(db.Model):
     """
     Categorías para ingresos y egresos.

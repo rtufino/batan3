@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.index') }}">Configuración</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.lista_parametros') }}">Parámetros</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ titulo }}</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-sliders"></i> {{ titulo }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="clave" class="form-label fw-bold">
+                                <i class="fa-solid fa-key"></i> Clave del Parámetro *
+                            </label>
+                            {{ form.clave(class="form-control text-monospace", placeholder="Ej: nombre_edificio") }}
+                            {% if form.clave.errors %}
+                                <div class="text-danger small mt-1">{{ form.clave.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">
+                                Identificador único (sin espacios, usar guiones bajos)
+                            </small>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="tipo" class="form-label fw-bold">
+                                <i class="fa-solid fa-tag"></i> Tipo de Dato *
+                            </label>
+                            {{ form.tipo(class="form-select", id="tipo-select") }}
+                            {% if form.tipo.errors %}
+                                <div class="text-danger small mt-1">{{ form.tipo.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="categoria" class="form-label fw-bold">
+                                <i class="fa-solid fa-folder"></i> Categoría *
+                            </label>
+                            {{ form.categoria(class="form-select") }}
+                            {% if form.categoria.errors %}
+                                <div class="text-danger small mt-1">{{ form.categoria.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-9 mb-3">
+                            <label for="valor" class="form-label fw-bold">
+                                <i class="fa-solid fa-edit"></i> Valor *
+                            </label>
+                            {{ form.valor(class="form-control", placeholder="Ingrese el valor según el tipo seleccionado", id="valor-input") }}
+                            {% if form.valor.errors %}
+                                <div class="text-danger small mt-1">{{ form.valor.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted" id="valor-help">
+                                El formato del valor depende del tipo seleccionado
+                            </small>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="editable" class="form-label fw-bold">
+                                <i class="fa-solid fa-lock-open"></i> ¿Editable?
+                            </label>
+                            {{ form.editable(class="form-select") }}
+                            {% if form.editable.errors %}
+                                <div class="text-danger small mt-1">{{ form.editable.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">
+                                Si es No, no se podrá editar ni eliminar
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label fw-bold">
+                            <i class="fa-solid fa-info-circle"></i> Descripción
+                        </label>
+                        {{ form.descripcion(class="form-control", placeholder="Descripción del propósito de este parámetro") }}
+                        {% if form.descripcion.errors %}
+                            <div class="text-danger small mt-1">{{ form.descripcion.errors[0] }}</div>
+                        {% endif %}
+                        <small class="text-muted">
+                            Explica para qué sirve este parámetro
+                        </small>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('config.lista_parametros') }}" class="btn btn-secondary">
+                            <i class="fa-solid fa-times"></i> Cancelar
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Información sobre tipos de datos -->
+        <div class="alert alert-info mt-3">
+            <strong><i class="fa-solid fa-lightbulb"></i> Guía de Tipos de Datos:</strong>
+            <ul class="mb-0 mt-2">
+                <li><strong>TEXT:</strong> Cualquier texto. Ej: "Edificio Batan 3", "admin@example.com"</li>
+                <li><strong>NUMBER:</strong> Números enteros o decimales. Ej: 10, 2.5, 100.50</li>
+                <li><strong>BOOLEAN:</strong> Verdadero o Falso. Valores válidos: true, false, 1, 0, si, no, sí</li>
+                <li><strong>DATE:</strong> Fechas en formato YYYY-MM-DD. Ej: 2025-12-31</li>
+                <li><strong>JSON:</strong> Objetos JSON. Ej: {"clave": "valor", "numero": 123}</li>
+            </ul>
+        </div>
+
+        <div class="alert alert-warning mt-2">
+            <strong><i class="fa-solid fa-exclamation-triangle"></i> Notas Importantes:</strong>
+            <ul class="mb-0 mt-2">
+                <li>La <strong>clave</strong> debe ser única en todo el sistema</li>
+                <li>Use nombres descriptivos en minúsculas con guiones bajos (snake_case)</li>
+                <li>Los parámetros marcados como <strong>No Editables</strong> no podrán modificarse ni eliminarse desde la interfaz</li>
+                <li>Los cambios en parámetros pueden afectar el funcionamiento del sistema inmediatamente</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('tipo-select');
+    const valorInput = document.getElementById('valor-input');
+    const valorHelp = document.getElementById('valor-help');
+    
+    function actualizarAyudaValor() {
+        const tipo = tipoSelect.value;
+        
+        switch(tipo) {
+            case 'TEXT':
+                valorInput.placeholder = 'Ej: Edificio Batan 3';
+                valorHelp.textContent = 'Ingrese cualquier texto';
+                valorInput.type = 'text';
+                break;
+            case 'NUMBER':
+                valorInput.placeholder = 'Ej: 10 o 2.5';
+                valorHelp.textContent = 'Ingrese un número (entero o decimal)';
+                valorInput.type = 'text';
+                break;
+            case 'BOOLEAN':
+                valorInput.placeholder = 'Ej: true, false, 1, 0, si, no';
+                valorHelp.textContent = 'Valores válidos: true, false, 1, 0, si, no, sí';
+                valorInput.type = 'text';
+                break;
+            case 'DATE':
+                valorInput.placeholder = 'YYYY-MM-DD';
+                valorHelp.textContent = 'Formato: YYYY-MM-DD (Ej: 2025-12-31)';
+                valorInput.type = 'date';
+                break;
+            case 'JSON':
+                valorInput.placeholder = '{"clave": "valor"}';
+                valorHelp.textContent = 'Ingrese un objeto JSON válido';
+                valorInput.type = 'text';
+                break;
+        }
+    }
+    
+    // Ejecutar al cargar
+    actualizarAyudaValor();
+    
+    // Ejecutar cuando cambie el tipo
+    tipoSelect.addEventListener('change', actualizarAyudaValor);
+});
+</script>
+{% endblock %}

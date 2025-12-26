@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Parámetros{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.index') }}">Configuración</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Parámetros</li>
+    </ol>
+</nav>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2 class="mb-0"><i class="fa-solid fa-sliders"></i> Gestión de Parámetros del Sistema</h2>
+        <p class="text-muted">Configura los parámetros que controlan el funcionamiento del sistema</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('config.nuevo_parametro') }}" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Nuevo Parámetro
+        </a>
+    </div>
+</div>
+
+<!-- Parámetros por Categoría -->
+{% set categorias_info = {
+    'GENERAL': {'nombre': 'General', 'icono': 'fa-cog', 'color': 'primary'},
+    'NOTIFICACIONES': {'nombre': 'Notificaciones', 'icono': 'fa-bell', 'color': 'info'},
+    'FINANZAS': {'nombre': 'Finanzas', 'icono': 'fa-dollar-sign', 'color': 'success'},
+    'CONTACTO': {'nombre': 'Contacto', 'icono': 'fa-address-book', 'color': 'warning'},
+    'SISTEMA': {'nombre': 'Sistema', 'icono': 'fa-server', 'color': 'secondary'},
+    'REPORTES': {'nombre': 'Reportes', 'icono': 'fa-file-pdf', 'color': 'danger'}
+} %}
+
+{% for categoria, parametros in parametros_por_categoria.items() %}
+    {% set cat_info = categorias_info.get(categoria, {'nombre': categoria, 'icono': 'fa-question', 'color': 'secondary'}) %}
+    
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-{{ cat_info.color }} text-white">
+            <h5 class="mb-0"><i class="fa-solid {{ cat_info.icono }}"></i> {{ cat_info.nombre }}</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 25%;">Clave</th>
+                        <th style="width: 20%;">Valor</th>
+                        <th style="width: 10%;">Tipo</th>
+                        <th style="width: 30%;">Descripción</th>
+                        <th class="text-center" style="width: 15%;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for param in parametros %}
+                    <tr>
+                        <td>
+                            <strong class="text-monospace">{{ param.clave }}</strong>
+                            {% if not param.editable %}
+                                <span class="badge bg-secondary ms-1" title="No editable">
+                                    <i class="fa-solid fa-lock"></i>
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if param.tipo == 'BOOLEAN' %}
+                                {% if param.get_valor_typed() %}
+                                    <span class="badge bg-success"><i class="fa-solid fa-check"></i> Sí</span>
+                                {% else %}
+                                    <span class="badge bg-danger"><i class="fa-solid fa-times"></i> No</span>
+                                {% endif %}
+                            {% elif param.tipo == 'NUMBER' %}
+                                <span class="badge bg-info">{{ param.valor }}</span>
+                            {% elif param.tipo == 'DATE' %}
+                                <span class="badge bg-warning text-dark">{{ param.valor }}</span>
+                            {% else %}
+                                <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ param.valor }}">
+                                    {{ param.valor }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ param.tipo }}</small>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ param.descripcion or '-' }}</small>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm" role="group">
+                                {% if param.editable %}
+                                    <a href="{{ url_for('config.editar_parametro', id=param.id) }}" class="btn btn-warning" title="Editar">
+                                        <i class="fa-solid fa-edit"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('config.eliminar_parametro', id=param.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-danger btn-sm" title="Eliminar" onclick="return confirm('¿Está seguro de eliminar este parámetro?')">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <button class="btn btn-secondary" disabled title="Parámetro del sistema (no editable)">
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endfor %}
+
+<div class="alert alert-info mt-4">
+    <strong><i class="fa-solid fa-info-circle"></i> Información:</strong>
+    <ul class="mb-0 mt-2">
+        <li>Los parámetros controlan el comportamiento del sistema</li>
+        <li>Los parámetros marcados con <i class="fa-solid fa-lock"></i> son del sistema y no se pueden editar ni eliminar</li>
+        <li><strong>Tipos de datos:</strong>
+            <ul>
+                <li><strong>TEXT:</strong> Texto libre</li>
+                <li><strong>NUMBER:</strong> Valores numéricos (enteros o decimales)</li>
+                <li><strong>BOOLEAN:</strong> Verdadero/Falso (true/false, 1/0, si/no)</li>
+                <li><strong>DATE:</strong> Fechas en formato YYYY-MM-DD</li>
+                <li><strong>JSON:</strong> Objetos JSON complejos</li>
+            </ul>
+        </li>
+        <li>Los cambios en parámetros pueden afectar el funcionamiento del sistema inmediatamente</li>
+    </ul>
+</div>
+{% endblock %}

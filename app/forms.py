@@ -199,3 +199,28 @@ class CuentaForm(FlaskForm):
     numero = StringField('Número de Cuenta (Opcional)', validators=[Optional()])
     saldo_inicial = DecimalField('Saldo Inicial ($)', places=2, validators=[DataRequired(), NumberRange(min=0)], default=0.0)
     submit = SubmitField('Guardar Cuenta')
+
+class ParametroForm(FlaskForm):
+    clave = StringField('Clave del Parámetro', validators=[DataRequired()])
+    valor = StringField('Valor', validators=[DataRequired()])
+    tipo = SelectField('Tipo de Dato', choices=[
+        ('TEXT', 'Texto'),
+        ('NUMBER', 'Número'),
+        ('BOOLEAN', 'Booleano (Sí/No)'),
+        ('DATE', 'Fecha'),
+        ('JSON', 'JSON')
+    ], validators=[DataRequired()])
+    descripcion = StringField('Descripción', validators=[Optional()])
+    categoria = SelectField('Categoría', choices=[
+        ('GENERAL', 'General'),
+        ('NOTIFICACIONES', 'Notificaciones'),
+        ('FINANZAS', 'Finanzas'),
+        ('CONTACTO', 'Contacto'),
+        ('SISTEMA', 'Sistema'),
+        ('REPORTES', 'Reportes')
+    ], validators=[DataRequired()])
+    editable = SelectField('¿Editable por usuarios?', choices=[
+        (True, 'Sí'),
+        (False, 'No')
+    ], coerce=lambda x: str(x) == 'True', default=True)
+    submit = SubmitField('Guardar Parámetro')

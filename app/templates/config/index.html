@@ -94,6 +94,31 @@
             </div>
         </div>
     </div>
+
+    <!-- Card Parámetros -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100 hover-card">
+            <div class="card-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fa-solid fa-sliders fa-4x text-warning"></i>
+                </div>
+                <h4 class="card-title mb-3">Parámetros del Sistema</h4>
+                <p class="card-text text-muted mb-4">
+                    Configura los parámetros que controlan el funcionamiento del sistema.
+                    Personaliza notificaciones, finanzas, contactos y más.
+                </p>
+                <a href="{{ url_for('config.lista_parametros') }}" class="btn btn-warning btn-lg">
+                    <i class="fa-solid fa-arrow-right"></i> Gestionar Parámetros
+                </a>
+            </div>
+            <div class="card-footer bg-light text-center">
+                <small class="text-muted">
+                    <i class="fa-solid fa-info-circle"></i>
+                    Ejemplos: Días de vencimiento, Interés de mora, Emails automáticos
+                </small>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Información adicional -->
@@ -109,6 +134,7 @@
                 <li><strong>Rubros:</strong> Clasifican todos los movimientos financieros (ingresos y egresos)</li>
                 <li><strong>Proveedores:</strong> Entidades a las que se realizan pagos o de las que se reciben servicios</li>
                 <li><strong>Cuentas:</strong> Cuentas bancarias y de efectivo donde se maneja el dinero del condominio</li>
+                <li><strong>Parámetros:</strong> Configuraciones que controlan el comportamiento del sistema</li>
             </ul>
         </div>
     </div>

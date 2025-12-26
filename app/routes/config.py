@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.extensions import db
-from app.models import Rubro, Movimiento, Proveedor, Cuenta
-from app.forms import RubroForm, ProveedorForm, CuentaForm
+from app.models import Rubro, Movimiento, Proveedor, Cuenta, Parametro
+from app.forms import RubroForm, ProveedorForm, CuentaForm, ParametroForm
 from sqlalchemy import func
 
 config_bp = Blueprint('config', __name__, url_prefix='/config')
@@ -363,3 +363,148 @@ def eliminar_cuenta(id):
         flash(f'Error al eliminar cuenta: {str(e)}', 'danger')
     
     return redirect(url_for('config.lista_cuentas'))
+
+# ==================== CRUD PARÁMETROS ====================
+
+@config_bp.route('/parametros')
+def lista_parametros():
+    """Lista todos los parámetros organizados por categoría"""
+    # Obtener todos los parámetros ordenados por categoría y clave
+    parametros = Parametro.query.order_by(Parametro.categoria, Parametro.clave).all()
+    
+    # Agrupar por categoría
+    parametros_por_categoria = {}
+    for param in parametros:
+        categoria = param.categoria or 'SIN_CATEGORIA'
+        if categoria not in parametros_por_categoria:
+            parametros_por_categoria[categoria] = []
+        parametros_por_categoria[categoria].append(param)
+    
+    return render_template('config/parametros.html', parametros_por_categoria=parametros_por_categoria)
+
+@config_bp.route('/parametros/nuevo', methods=['GET', 'POST'])
+def nuevo_parametro():
+    """Crear un nuevo parámetro"""
+    form = ParametroForm()
+    
+    if form.validate_on_submit():
+        # Verificar que no exista un parámetro con la misma clave
+        existe = Parametro.query.filter_by(clave=form.clave.data).first()
+        if existe:
+            flash(f'Ya existe un parámetro con la clave "{form.clave.data}"', 'warning')
+            return render_template('config/parametro_form.html', form=form, titulo='Nuevo Parámetro')
+        
+        # Validar el valor según el tipo
+        valor = form.valor.data
+        tipo = form.tipo.data
+        
+        try:
+            if tipo == 'NUMBER':
+                float(valor)  # Validar que sea número
+            elif tipo == 'BOOLEAN':
+                if valor.lower() not in ('true', 'false', '1', '0', 'si', 'no', 'sí'):
+                    raise ValueError('Valor booleano inválido')
+            elif tipo == 'DATE':
+                from datetime import datetime
+                datetime.strptime(valor, '%Y-%m-%d')  # Validar formato de fecha
+        except ValueError as e:
+            flash(f'Valor inválido para el tipo {tipo}: {str(e)}', 'danger')
+            return render_template('config/parametro_form.html', form=form, titulo='Nuevo Parámetro')
+        
+        nuevo_parametro = Parametro(
+            clave=form.clave.data,
+            valor=valor,
+            tipo=tipo,
+            descripcion=form.descripcion.data,
+            categoria=form.categoria.data,
+            editable=form.editable.data
+        )
+        
+        try:
+            db.session.add(nuevo_parametro)
+            db.session.commit()
+            flash(f'Parámetro "{nuevo_parametro.clave}" creado exitosamente', 'success')
+            return redirect(url_for('config.lista_parametros'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear parámetro: {str(e)}', 'danger')
+    
+    return render_template('config/parametro_form.html', form=form, titulo='Nuevo Parámetro')
+
+@config_bp.route('/parametros/editar/<int:id>', methods=['GET', 'POST'])
+def editar_parametro(id):
+    """Editar un parámetro existente"""
+    parametro = Parametro.query.get_or_404(id)
+    
+    # Verificar si es editable
+    if not parametro.editable:
+        flash(f'El parámetro "{parametro.clave}" no es editable', 'warning')
+        return redirect(url_for('config.lista_parametros'))
+    
+    form = ParametroForm(obj=parametro)
+    
+    if form.validate_on_submit():
+        # Verificar que no exista otro parámetro con la misma clave
+        existe = Parametro.query.filter(
+            Parametro.clave == form.clave.data,
+            Parametro.id != id
+        ).first()
+        
+        if existe:
+            flash(f'Ya existe otro parámetro con la clave "{form.clave.data}"', 'warning')
+            return render_template('config/parametro_form.html', form=form, titulo='Editar Parámetro', parametro=parametro)
+        
+        # Validar el valor según el tipo
+        valor = form.valor.data
+        tipo = form.tipo.data
+        
+        try:
+            if tipo == 'NUMBER':
+                float(valor)
+            elif tipo == 'BOOLEAN':
+                if valor.lower() not in ('true', 'false', '1', '0', 'si', 'no', 'sí'):
+                    raise ValueError('Valor booleano inválido')
+            elif tipo == 'DATE':
+                from datetime import datetime
+                datetime.strptime(valor, '%Y-%m-%d')
+        except ValueError as e:
+            flash(f'Valor inválido para el tipo {tipo}: {str(e)}', 'danger')
+            return render_template('config/parametro_form.html', form=form, titulo='Editar Parámetro', parametro=parametro)
+        
+        parametro.clave = form.clave.data
+        parametro.valor = valor
+        parametro.tipo = tipo
+        parametro.descripcion = form.descripcion.data
+        parametro.categoria = form.categoria.data
+        parametro.editable = form.editable.data
+        
+        try:
+            db.session.commit()
+            flash(f'Parámetro "{parametro.clave}" actualizado exitosamente', 'success')
+            return redirect(url_for('config.lista_parametros'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar parámetro: {str(e)}', 'danger')
+    
+    return render_template('config/parametro_form.html', form=form, titulo='Editar Parámetro', parametro=parametro)
+
+@config_bp.route('/parametros/eliminar/<int:id>', methods=['POST'])
+def eliminar_parametro(id):
+    """Eliminar un parámetro"""
+    parametro = Parametro.query.get_or_404(id)
+    
+    # Verificar si es editable (solo los editables se pueden eliminar)
+    if not parametro.editable:
+        flash(f'No se puede eliminar el parámetro "{parametro.clave}" porque no es editable', 'danger')
+        return redirect(url_for('config.lista_parametros'))
+    
+    try:
+        clave_parametro = parametro.clave
+        db.session.delete(parametro)
+        db.session.commit()
+        flash(f'Parámetro "{clave_parametro}" eliminado exitosamente', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar parámetro: {str(e)}', 'danger')
+    
+    return redirect(url_for('config.lista_parametros'))
