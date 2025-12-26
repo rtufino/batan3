@@ -10,5 +10,5 @@ uploads
 plans
 deployment
 .devcontainer
-server.txt
 .vscode
+seed.py

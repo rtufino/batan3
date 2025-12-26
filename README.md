@@ -213,9 +213,8 @@ Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para má
 
 ## 📞 Contacto
 
-- **Organización:** AdminBatan
-- **Email:** soporte@batan3.com
-- **Sitio Web:** [https://batan3.com](https://batan3.com)
+- **Organización:** Administración Batán III
+- **Email:** edificio.batan3@gmail.com
 - **Ubicación:** Quito, Ecuador 🇪🇨
 
 ## 🙏 Agradecimientos
