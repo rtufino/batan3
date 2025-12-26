@@ -496,13 +496,15 @@ def generar_link_whatsapp(persona, depto, monto_total):
     print(tel)
     if not tel:
         return None
+    
+    cuenta_pichincha = Cuenta.query.filter(Cuenta.nombre.ilike('%pichincha%')).first()
         
     mensaje = (
-        f"Hola {persona.nombre}, le saluda la Administración del Edificio Batan III. 🏢\n\n"
+        f"Hola {persona.nombre}, le saluda la Administración del Edificio Batan III. \n\n"
         f"Le informamos que el estado de cuenta del *Departamento {depto.numero}* presenta un "
         f"valor pendiente de *${monto_total:.2f}*.\n\n"
-        f"Agradecemos su gentil pago vía transferencia al Banco Pichincha Cta: 2100XXXXXX.\n"
-        f"Por favor, envíenos el comprobante por este medio. ¡Saludos! 👍"
+        f"Favor realizar deposito o transferencia a la Cuenta Corriente del {cuenta_pichincha.nombre} Nro. {cuenta_pichincha.numero} a nombre de Mayra Araujo.\n"
+        f"Por favor, envíenos el comprobante por este medio. ¡Saludos!"
     )
     
     mensaje_codificado = urllib.parse.quote(mensaje)
