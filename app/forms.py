@@ -189,3 +189,13 @@ class ProveedorForm(FlaskForm):
         ('OTROS', 'Otros')
     ], validators=[DataRequired()])
     submit = SubmitField('Guardar Proveedor')
+
+class CuentaForm(FlaskForm):
+    nombre = StringField('Nombre de la Cuenta', validators=[DataRequired()])
+    tipo = SelectField('Tipo de Cuenta', choices=[
+        ('BANCO', 'Cuenta Bancaria'),
+        ('EFECTIVO', 'Efectivo / Caja')
+    ], validators=[DataRequired()])
+    numero = StringField('Número de Cuenta (Opcional)', validators=[Optional()])
+    saldo_inicial = DecimalField('Saldo Inicial ($)', places=2, validators=[DataRequired(), NumberRange(min=0)], default=0.0)
+    submit = SubmitField('Guardar Cuenta')

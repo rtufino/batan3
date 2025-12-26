@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Cuentas{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.index') }}">Configuración</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Cuentas</li>
+    </ol>
+</nav>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2 class="mb-0"><i class="fa-solid fa-wallet"></i> Gestión de Cuentas</h2>
+        <p class="text-muted">Administra las cuentas bancarias y de efectivo del condominio</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('config.nueva_cuenta') }}" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Nueva Cuenta
+        </a>
+    </div>
+</div>
+
+<!-- Cuentas por Tipo -->
+{% set tipos = {
+    'BANCO': {'nombre': 'Cuentas Bancarias', 'icono': 'fa-building-columns', 'color': 'primary'},
+    'EFECTIVO': {'nombre': 'Efectivo / Caja', 'icono': 'fa-money-bill-wave', 'color': 'success'}
+} %}
+
+{% for tipo_key, tipo_info in tipos.items() %}
+    {% set cuentas_tipo = cuentas_data | selectattr('cuenta.tipo', 'equalto', tipo_key) | list %}
+    
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-{{ tipo_info.color }} text-white">
+            <h5 class="mb-0"><i class="fa-solid {{ tipo_info.icono }}"></i> {{ tipo_info.nombre }}</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Número de Cuenta</th>
+                        <th class="text-end">Saldo Inicial</th>
+                        <th class="text-end">Saldo Actual</th>
+                        <th class="text-center">Movimientos</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if cuentas_tipo %}
+                        {% for item in cuentas_tipo %}
+                        <tr>
+                            <td><strong>{{ item.cuenta.nombre }}</strong></td>
+                            <td>{{ item.cuenta.numero or '-' }}</td>
+                            <td class="text-end">${{ "%.2f"|format(item.cuenta.saldo_inicial) }}</td>
+                            <td class="text-end">
+                                <strong class="{% if item.cuenta.saldo >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    ${{ "%.2f"|format(item.cuenta.saldo) }}
+                                </strong>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-info">{{ item.num_movimientos }}</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('config.editar_cuenta', id=item.cuenta.id) }}" class="btn btn-warning" title="Editar">
+                                        <i class="fa-solid fa-edit"></i>
+                                    </a>
+                                    
+                                    {% if item.puede_eliminar %}
+                                        <form method="POST" action="{{ url_for('config.eliminar_cuenta', id=item.cuenta.id) }}" style="display: inline;">
+                                            <button type="submit" class="btn btn-danger btn-sm" title="Eliminar" onclick="return confirm('¿Está seguro de eliminar esta cuenta?')">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        {% if item.es_protegida %}
+                                            <button class="btn btn-secondary" disabled title="Cuenta del sistema (no se puede eliminar)">
+                                                <i class="fa-solid fa-shield-halved"></i>
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-secondary" disabled title="No se puede eliminar (tiene movimientos)">
+                                                <i class="fa-solid fa-ban"></i>
+                                            </button>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No hay cuentas de este tipo
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endfor %}
+
+<div class="alert alert-info mt-4">
+    <strong><i class="fa-solid fa-info-circle"></i> Información:</strong>
+    <ul class="mb-0 mt-2">
+        <li>Las cuentas se organizan por tipo: Bancarias y Efectivo</li>
+        <li>El <strong>Saldo Inicial</strong> es el monto con el que se creó la cuenta</li>
+        <li>El <strong>Saldo Actual</strong> se actualiza automáticamente con cada movimiento pagado</li>
+        <li>No se pueden eliminar cuentas que tengan movimientos asociados</li>
+        <li>Las cuentas <strong>"Banco Pichincha"</strong> y <strong>"Caja Chica"</strong> son cuentas del sistema y no se pueden eliminar</li>
+        <li>Una vez que la cuenta tenga movimientos, no se podrá modificar el saldo inicial</li>
+    </ul>
+</div>
+{% endblock %}

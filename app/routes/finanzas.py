@@ -155,6 +155,10 @@ def registrar_pago(id):
     # FLUJO GENERAL PARA OTROS RUBROS:
     form = ConfirmarPagoForm()
     form.cuenta_id.choices = [(c.id, f"{c.nombre} (${c.saldo:.2f})") for c in Cuenta.query.all()]
+    
+    # Preseleccionar la cuenta original del movimiento en GET
+    if request.method == 'GET' and movimiento.cuenta_id:
+        form.cuenta_id.data = movimiento.cuenta_id
 
     if form.validate_on_submit():
         cuenta = Cuenta.query.get(form.cuenta_id.data)

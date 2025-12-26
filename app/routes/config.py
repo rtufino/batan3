@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.extensions import db
-from app.models import Rubro, Movimiento, Proveedor
-from app.forms import RubroForm, ProveedorForm
+from app.models import Rubro, Movimiento, Proveedor, Cuenta
+from app.forms import RubroForm, ProveedorForm, CuentaForm
 from sqlalchemy import func
 
 config_bp = Blueprint('config', __name__, url_prefix='/config')
@@ -228,3 +228,138 @@ def eliminar_proveedor(id):
         flash(f'Error al eliminar proveedor: {str(e)}', 'danger')
     
     return redirect(url_for('config.lista_proveedores'))
+
+# ==================== CRUD CUENTAS ====================
+
+@config_bp.route('/cuentas')
+def lista_cuentas():
+    """Lista todas las cuentas con información de uso"""
+    # Obtener todas las cuentas con conteo de movimientos
+    cuentas_query = db.session.query(
+        Cuenta,
+        func.count(Movimiento.id).label('num_movimientos')
+    ).outerjoin(Movimiento).group_by(Cuenta.id).order_by(Cuenta.tipo, Cuenta.nombre).all()
+    
+    # Cuentas protegidas del sistema
+    cuentas_protegidas = ['Banco Pichincha', 'Caja Chica']
+    
+    cuentas_data = []
+    for cuenta, num_movimientos in cuentas_query:
+        es_protegida = cuenta.nombre in cuentas_protegidas
+        cuentas_data.append({
+            'cuenta': cuenta,
+            'num_movimientos': num_movimientos,
+            'puede_eliminar': num_movimientos == 0 and not es_protegida,
+            'es_protegida': es_protegida
+        })
+    
+    return render_template('config/cuentas.html', cuentas_data=cuentas_data)
+
+@config_bp.route('/cuentas/nueva', methods=['GET', 'POST'])
+def nueva_cuenta():
+    """Crear una nueva cuenta"""
+    form = CuentaForm()
+    
+    if form.validate_on_submit():
+        # Verificar que no exista una cuenta con el mismo nombre
+        existe = Cuenta.query.filter_by(nombre=form.nombre.data).first()
+        if existe:
+            flash(f'Ya existe una cuenta con el nombre "{form.nombre.data}"', 'warning')
+            return render_template('config/cuenta_form.html', form=form, titulo='Nueva Cuenta')
+        
+        nueva_cuenta = Cuenta(
+            nombre=form.nombre.data,
+            tipo=form.tipo.data,
+            numero=form.numero.data,
+            saldo_inicial=float(form.saldo_inicial.data),
+            saldo=float(form.saldo_inicial.data)  # El saldo inicial es el saldo actual al crear
+        )
+        
+        try:
+            db.session.add(nueva_cuenta)
+            db.session.commit()
+            flash(f'Cuenta "{nueva_cuenta.nombre}" creada exitosamente con saldo inicial de ${nueva_cuenta.saldo_inicial:.2f}', 'success')
+            return redirect(url_for('config.lista_cuentas'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear cuenta: {str(e)}', 'danger')
+    
+    return render_template('config/cuenta_form.html', form=form, titulo='Nueva Cuenta')
+
+@config_bp.route('/cuentas/editar/<int:id>', methods=['GET', 'POST'])
+def editar_cuenta(id):
+    """Editar una cuenta existente"""
+    cuenta = Cuenta.query.get_or_404(id)
+    
+    # Verificar si tiene movimientos
+    num_movimientos = Movimiento.query.filter_by(cuenta_id=id).count()
+    tiene_movimientos = num_movimientos > 0
+    
+    form = CuentaForm(obj=cuenta)
+    
+    # Pre-cargar el saldo inicial actual
+    if request.method == 'GET':
+        form.saldo_inicial.data = cuenta.saldo_inicial
+    
+    if form.validate_on_submit():
+        # Verificar que no exista otra cuenta con el mismo nombre
+        existe = Cuenta.query.filter(
+            Cuenta.nombre == form.nombre.data,
+            Cuenta.id != id
+        ).first()
+        
+        if existe:
+            flash(f'Ya existe otra cuenta con el nombre "{form.nombre.data}"', 'warning')
+            return render_template('config/cuenta_form.html', form=form, titulo='Editar Cuenta', cuenta=cuenta, tiene_movimientos=tiene_movimientos, num_movimientos=num_movimientos)
+        
+        # Si tiene movimientos, no permitir cambiar el saldo inicial
+        if tiene_movimientos and float(form.saldo_inicial.data) != cuenta.saldo_inicial:
+            flash(f'No se puede modificar el saldo inicial porque la cuenta tiene {num_movimientos} movimiento(s) asociado(s)', 'danger')
+            return render_template('config/cuenta_form.html', form=form, titulo='Editar Cuenta', cuenta=cuenta, tiene_movimientos=tiene_movimientos, num_movimientos=num_movimientos)
+        
+        cuenta.nombre = form.nombre.data
+        cuenta.tipo = form.tipo.data
+        cuenta.numero = form.numero.data
+        # Solo actualizar saldo_inicial si no tiene movimientos
+        if not tiene_movimientos:
+            cuenta.saldo_inicial = float(form.saldo_inicial.data)
+            cuenta.saldo = float(form.saldo_inicial.data)  # Ajustar saldo actual
+        
+        try:
+            db.session.commit()
+            flash(f'Cuenta "{cuenta.nombre}" actualizada exitosamente', 'success')
+            return redirect(url_for('config.lista_cuentas'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar cuenta: {str(e)}', 'danger')
+    
+    return render_template('config/cuenta_form.html', form=form, titulo='Editar Cuenta', cuenta=cuenta, tiene_movimientos=tiene_movimientos, num_movimientos=num_movimientos)
+
+@config_bp.route('/cuentas/eliminar/<int:id>', methods=['POST'])
+def eliminar_cuenta(id):
+    """Eliminar una cuenta"""
+    cuenta = Cuenta.query.get_or_404(id)
+    
+    # No permitir eliminar cuentas del sistema
+    cuentas_protegidas = ['Banco Pichincha', 'Caja Chica']
+    if cuenta.nombre in cuentas_protegidas:
+        flash(f'No se puede eliminar la cuenta "{cuenta.nombre}" porque es una cuenta del sistema', 'danger')
+        return redirect(url_for('config.lista_cuentas'))
+    
+    # Verificar si tiene movimientos asociados
+    num_movimientos = Movimiento.query.filter_by(cuenta_id=id).count()
+    
+    if num_movimientos > 0:
+        flash(f'No se puede eliminar la cuenta "{cuenta.nombre}" porque tiene {num_movimientos} movimiento(s) asociado(s)', 'danger')
+        return redirect(url_for('config.lista_cuentas'))
+    
+    try:
+        nombre_cuenta = cuenta.nombre
+        db.session.delete(cuenta)
+        db.session.commit()
+        flash(f'Cuenta "{nombre_cuenta}" eliminada exitosamente', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar cuenta: {str(e)}', 'danger')
+    
+    return redirect(url_for('config.lista_cuentas'))

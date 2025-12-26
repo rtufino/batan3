@@ -54,7 +54,7 @@
                 </div>
                 <h4 class="card-title mb-3">Proveedores / Beneficiarios</h4>
                 <p class="card-text text-muted mb-4">
-                    Gestiona el catálogo de proveedores de servicios y beneficiarios de pagos. 
+                    Gestiona el catálogo de proveedores de servicios y beneficiarios de pagos.
                     Organiza por categorías: servicios básicos, mantenimiento, nómina y otros.
                 </p>
                 <a href="{{ url_for('config.lista_proveedores') }}" class="btn btn-success btn-lg">
@@ -63,8 +63,33 @@
             </div>
             <div class="card-footer bg-light text-center">
                 <small class="text-muted">
-                    <i class="fa-solid fa-info-circle"></i> 
+                    <i class="fa-solid fa-info-circle"></i>
                     Ejemplos: Empresa Eléctrica, Conserje, Técnico de Ascensores
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Cuentas -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100 hover-card">
+            <div class="card-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fa-solid fa-wallet fa-4x text-info"></i>
+                </div>
+                <h4 class="card-title mb-3">Cuentas</h4>
+                <p class="card-text text-muted mb-4">
+                    Administra las cuentas bancarias y de efectivo del condominio.
+                    Controla los saldos y movimientos de cada cuenta.
+                </p>
+                <a href="{{ url_for('config.lista_cuentas') }}" class="btn btn-info btn-lg text-white">
+                    <i class="fa-solid fa-arrow-right"></i> Gestionar Cuentas
+                </a>
+            </div>
+            <div class="card-footer bg-light text-center">
+                <small class="text-muted">
+                    <i class="fa-solid fa-info-circle"></i>
+                    Ejemplos: Banco Pichincha, Caja Chica, Cuenta de Ahorros
                 </small>
             </div>
         </div>
@@ -78,10 +103,13 @@
             <h5 class="alert-heading"><i class="fa-solid fa-lightbulb"></i> Acerca de la Configuración</h5>
             <hr>
             <p class="mb-0">
-                Esta sección te permite configurar los catálogos maestros del sistema. 
-                Los <strong>Rubros</strong> se utilizan para clasificar todos los movimientos financieros (ingresos y egresos), 
-                mientras que los <strong>Proveedores</strong> representan las entidades a las que se realizan pagos o de las que se reciben servicios.
+                Esta sección te permite configurar los catálogos maestros del sistema:
             </p>
+            <ul class="mt-2 mb-0">
+                <li><strong>Rubros:</strong> Clasifican todos los movimientos financieros (ingresos y egresos)</li>
+                <li><strong>Proveedores:</strong> Entidades a las que se realizan pagos o de las que se reciben servicios</li>
+                <li><strong>Cuentas:</strong> Cuentas bancarias y de efectivo donde se maneja el dinero del condominio</li>
+            </ul>
         </div>
     </div>
 </div>

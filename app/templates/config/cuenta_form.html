@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.index') }}">Configuración</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.lista_cuentas') }}">Cuentas</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ titulo }}</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-wallet"></i> {{ titulo }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="nombre" class="form-label fw-bold">
+                                <i class="fa-solid fa-signature"></i> Nombre de la Cuenta *
+                            </label>
+                            {{ form.nombre(class="form-control", placeholder="Ej: Banco Pichincha - Ahorros, Caja Chica") }}
+                            {% if form.nombre.errors %}
+                                <div class="text-danger small mt-1">{{ form.nombre.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">
+                                Nombre descriptivo para identificar la cuenta
+                            </small>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="tipo" class="form-label fw-bold">
+                                <i class="fa-solid fa-tag"></i> Tipo de Cuenta *
+                            </label>
+                            {{ form.tipo(class="form-select") }}
+                            {% if form.tipo.errors %}
+                                <div class="text-danger small mt-1">{{ form.tipo.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="numero" class="form-label fw-bold">
+                                <i class="fa-solid fa-hashtag"></i> Número de Cuenta
+                            </label>
+                            {{ form.numero(class="form-control", placeholder="Ej: 1234567890") }}
+                            {% if form.numero.errors %}
+                                <div class="text-danger small mt-1">{{ form.numero.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">
+                                Número de cuenta bancaria (opcional)
+                            </small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="saldo_inicial" class="form-label fw-bold">
+                                <i class="fa-solid fa-dollar-sign"></i> Saldo Inicial *
+                            </label>
+                            {% if tiene_movimientos %}
+                                {{ form.saldo_inicial(class="form-control", placeholder="0.00", step="0.01", readonly=true, style="background-color: #e9ecef;") }}
+                                <small class="text-danger">
+                                    <i class="fa-solid fa-lock"></i> No se puede modificar (tiene {{ num_movimientos }} movimiento(s))
+                                </small>
+                            {% else %}
+                                {{ form.saldo_inicial(class="form-control", placeholder="0.00", step="0.01") }}
+                                <small class="text-muted">
+                                    Monto inicial con el que se crea la cuenta
+                                </small>
+                            {% endif %}
+                            {% if form.saldo_inicial.errors %}
+                                <div class="text-danger small mt-1">{{ form.saldo_inicial.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if cuenta %}
+                    <div class="alert alert-info">
+                        <strong><i class="fa-solid fa-info-circle"></i> Saldo Actual:</strong>
+                        <span class="{% if cuenta.saldo >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            ${{ "%.2f"|format(cuenta.saldo) }}
+                        </span>
+                        <br>
+                        {% if tiene_movimientos %}
+                            <small><i class="fa-solid fa-lock"></i> El saldo inicial no se puede modificar porque la cuenta tiene movimientos registrados</small>
+                        {% else %}
+                            <small>El saldo actual se ajustará automáticamente si cambias el saldo inicial</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('config.lista_cuentas') }}" class="btn btn-secondary">
+                            <i class="fa-solid fa-times"></i> Cancelar
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Información adicional -->
+        
+        <div class="alert alert-warning mt-2">
+            <strong><i class="fa-solid fa-exclamation-triangle"></i> Notas Importantes:</strong>
+            <ul class="mb-0 mt-2">
+                <li>El <strong>saldo inicial</strong> es el monto con el que se crea la cuenta</li>
+                <li>El <strong>saldo actual</strong> se actualiza automáticamente con cada movimiento pagado</li>
+                <li>No podrás eliminar cuentas que tengan movimientos asociados</li>
+                <li><strong class="text-danger">Una vez que la cuenta tenga movimientos, no podrás modificar el saldo inicial</strong></li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
