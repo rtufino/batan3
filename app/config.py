@@ -1,9 +1,10 @@
 import os
 from dotenv import load_dotenv
 
-# Determinamos la ruta base del proyecto para ubicar la base de datos SQLite
+# Determinamos la ruta base del proyecto (un nivel arriba de app/)
 basedir = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(basedir, '.env'))
+project_root = os.path.dirname(basedir)  # Subir un nivel desde app/ a la raíz
+load_dotenv(os.path.join(project_root, '.env'))
 
 class Config:
     # Llave secreta para firmar cookies y proteger contra CSRF
