@@ -5,6 +5,7 @@ from app.extensions import db
 from datetime import datetime
 from sqlalchemy import extract
 from sqlalchemy.exc import IntegrityError
+from app.models import Parametro
 
 from app.utils import generar_pdf_aviso, notificar_aviso_cobro, notificar_recibo_pago, generar_pdf_recibo, generar_pdf_estado_cuenta
 
@@ -186,7 +187,8 @@ def generar_mensualidad():
 
             # 4. ENVIAR NOTIFICACIÓN POR EMAIL
             try:
-                notificar_aviso_cobro(depto, nuevo_cargo, pdf_bytes)
+                if Parametro.get_parametro('enviar_emails_automaticos', False):
+                    notificar_aviso_cobro(depto, nuevo_cargo, pdf_bytes)
             except Exception as e:
                 # Si falla el email, no interrumpimos el proceso
                 print(f"Error al enviar email a {depto.numero}: {str(e)}")
@@ -270,7 +272,8 @@ def registrar_pago(movimiento_id):
                 pdf_bytes = pdf_buffer.getvalue()
                 
                 # Enviar notificación con el recibo adjunto
-                notificar_recibo_pago(depto, movimiento, pdf_bytes)
+                if Parametro.get_parametro('enviar_emails_automaticos', False):
+                    notificar_recibo_pago(depto, movimiento, pdf_bytes)
             except Exception as e:
                 # Si falla el email, no interrumpimos el proceso
                 print(f"Error al enviar recibo por email: {str(e)}")

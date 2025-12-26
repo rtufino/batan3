@@ -6,6 +6,7 @@ from app.extensions import mail
 from threading import Thread
 import locale
 import urllib.parse
+from app.models import Cuenta, Parametro
 
 # Configurar locale para español (para nombres de meses)
 try:
@@ -36,7 +37,7 @@ class ReciboPDF(FPDF):
         # Posición a 1.5 cm del final
         self.set_y(-15)
         self.set_font('Helvetica', 'I', 8)
-        self.cell(0, 10, f'Página {self.page_no()}/{{nb}} - Generado por Sistema Batan3', align='C')
+        self.cell(0, 10, f'Página {self.page_no()}/{{nb}}', align='C')
 
 def generar_pdf_recibo(movimiento):
     """
@@ -154,11 +155,10 @@ def generar_pdf_aviso(depto, movimiento_actual, deuda_anterior):
     pdf.set_font('Helvetica', '', 9)
     
     # Buscar la cuenta del Banco Pichincha
-    from app.models import Cuenta
     cuenta_pichincha = Cuenta.query.filter(Cuenta.nombre.ilike('%pichincha%')).first()
     
     if cuenta_pichincha and cuenta_pichincha.numero:
-        instrucciones = f"Favor realizar deposito o transferencia a la {cuenta_pichincha.nombre} Nro. {cuenta_pichincha.numero} a nombre de Mayra Araujo.\n\nEnviar el comprobante de pago al WhatsApp: 0992923858 o al correo: edificio.batan3@gmail.com"
+        instrucciones = f"Favor realizar deposito o transferencia a la Cuenta Corriente del {cuenta_pichincha.nombre} Nro. {cuenta_pichincha.numero} a nombre de Mayra Araujo.\n\nEnviar el comprobante de pago al WhatsApp: 0992923858 o al correo: edificio.batan3@gmail.com"
     else:
         instrucciones = "Favor realizar deposito o transferencia a la Cuenta Corriente del Banco Pichincha a nombre de Mayra Araujo.\n\nEnviar el comprobante de pago al WhatsApp: 0992923858 o al correo: edificio.batan3@gmail.com"
     
@@ -257,6 +257,13 @@ def notificar_aviso_cobro(departamento, movimiento, pdf_bytes):
     
     asunto = f"Aviso de Cobro - {mes_anio}"
     
+    # Buscar la cuenta del Banco Pichincha
+    cuenta_pichincha = Cuenta.query.filter(Cuenta.nombre.ilike('%pichincha%')).first()
+
+    # Parametros
+    whatsapp = Parametro.get_parametro('whatsapp_administracion', '0992923858')
+    email = Parametro.get_parametro('email_administracion', 'edificio.batan3@gmail.com')
+    
     cuerpo_texto = f"""
 Estimado/a {nombre_saludo},
 
@@ -266,9 +273,11 @@ DEPARTAMENTO: {departamento.numero}
 MONTO DEL MES: ${movimiento.monto:.2f}
 SALDO TOTAL: ${departamento.saldo_pendiente:.2f}
 
-Adjunto encontrará el detalle completo en formato PDF.
+RECUERDE: Realizar el pago de su expensa dentro de los primeros 15 días del mes.
 
-Por favor, realice el pago a la brevedad posible según las instrucciones indicadas en el documento.
+Favor realizar deposito o transferencia a la Cuenta Corriente del {cuenta_pichincha.nombre} Nro. {cuenta_pichincha.numero} a nombre de Mayra Araujo.
+
+Enviar el comprobante de pago al WhatsApp: {whatsapp} o al correo: {email}"
 
 Atentamente,
 Administración Edificio Batan III
@@ -326,13 +335,24 @@ Administración Edificio Batan III
     nombre_archivo = f"Aviso_Cobro_{departamento.numero}_{mes_anio_file}.pdf"
     adjuntos = [(nombre_archivo, 'application/pdf', pdf_bytes)]
     
-    # Enviar el email a todos los destinatarios
+    # 1. Obtención de parámetros de configuración
+    enviar_adjunto = Parametro.get_parametro('enviar_adjunto', False)
+    enviar_html = Parametro.get_parametro('enviar_html', False)
+
+    # 2. Lógica de filtrado eficiente
+    # Si enviar_html es False, forzamos cuerpo_html a None
+    html_final = cuerpo_html if enviar_html else None
+
+    # Si enviar_adjunto es False, enviamos una lista vacía o None
+    adjuntos_final = adjuntos if enviar_adjunto else None
+
+    # 3. Retorno de la función con los datos filtrados
     return enviar_email(
         destinatarios=destinatarios,
         asunto=asunto,
         cuerpo_texto=cuerpo_texto,
-        cuerpo_html=cuerpo_html,
-        adjuntos=adjuntos
+        cuerpo_html=html_final,
+        adjuntos=adjuntos_final
     )
 
 def notificar_recibo_pago(departamento, movimiento, pdf_bytes):
@@ -373,8 +393,6 @@ MONTO PAGADO: ${movimiento.monto:.2f}
 CONCEPTO: {movimiento.descripcion}
 
 SALDO PENDIENTE ACTUAL: ${departamento.saldo_pendiente:.2f}
-
-Adjunto encontrará el recibo oficial en formato PDF.
 
 Gracias por su puntualidad.
 
@@ -435,13 +453,24 @@ Administración Edificio Batan III
     nombre_archivo = f"Recibo_Pago_{departamento.numero}_{movimiento.id}.pdf"
     adjuntos = [(nombre_archivo, 'application/pdf', pdf_bytes)]
     
-    # Enviar el email a todos los destinatarios
+    # 1. Obtención de parámetros de configuración
+    enviar_adjunto = Parametro.get_parametro('enviar_adjunto', False)
+    enviar_html = Parametro.get_parametro('enviar_html', False)
+
+    # 2. Lógica de filtrado eficiente
+    # Si enviar_html es False, forzamos cuerpo_html a None
+    html_final = cuerpo_html if enviar_html else None
+
+    # Si enviar_adjunto es False, enviamos una lista vacía o None
+    adjuntos_final = adjuntos if enviar_adjunto else None
+
+    # 3. Retorno de la función con los datos filtrados
     return enviar_email(
         destinatarios=destinatarios,
         asunto=asunto,
         cuerpo_texto=cuerpo_texto,
-        cuerpo_html=cuerpo_html,
-        adjuntos=adjuntos
+        cuerpo_html=html_final,
+        adjuntos=adjuntos_final
     )
 
 def formatear_telefono_whatsapp(telefono):
