@@ -3,34 +3,37 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-10">
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Registrar Intervención Técnica</h4>
+                <h4 class="mb-0"><i class="fa-solid fa-wrench"></i> Registrar Mantenimiento</h4>
             </div>
             <div class="card-body">
                 <form method="POST" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
 
+                    <!-- SECCIÓN: DATOS DEL MANTENIMIENTO -->
+                    <h5 class="border-bottom pb-2 mb-3"><i class="fa-solid fa-clipboard-list"></i> Datos del Mantenimiento</h5>
+                    
                     <div class="mb-3">
-                        <label class="fw-bold">Equipo / Activo</label>
+                        <label class="fw-bold">Equipo / Espacio *</label>
                         {{ form.equipo_id(class="form-select form-select-lg") }}
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label>Fecha</label>
+                            <label class="fw-bold">Fecha del Trabajo *</label>
                             {{ form.fecha(class="form-control", type="date") }}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label>Costo Referencial ($)</label>
-                            {{ form.costo_referencial(class="form-control") }}
-                            <div class="form-text small">Solo informativo. Registre el pago real en Finanzas.</div>
+                            <label class="fw-bold">¿Registrar Gasto Asociado? *</label>
+                            {{ form.registrar_gasto(class="form-select", id="registrar_gasto") }}
+                            <small class="text-muted">Si selecciona "Sí", se registrará automáticamente el gasto en finanzas</small>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label>Descripción del trabajo realizado</label>
+                        <label class="fw-bold">Descripción del Trabajo Realizado *</label>
                         {{ form.descripcion(class="form-control", rows="3") }}
                     </div>
 
@@ -45,7 +48,50 @@
                         </div>
                     </div>
 
-                    <div class="d-grid gap-2">
+                    <!-- SECCIÓN: DATOS DEL GASTO (se muestra/oculta con JavaScript) -->
+                    <div id="seccion_gasto" style="display: none;">
+                        <h5 class="border-bottom pb-2 mb-3 text-danger"><i class="fa-solid fa-money-bill-wave"></i> Datos del Gasto</h5>
+                        
+                        <div class="alert alert-info">
+                            <i class="fa-solid fa-info-circle"></i> Complete los siguientes campos para registrar automáticamente el gasto en el sistema financiero.
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="fw-bold">Proveedor / Beneficiario *</label>
+                                {{ form.proveedor_id(class="form-select") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="fw-bold">Rubro del Gasto *</label>
+                                {{ form.rubro_id(class="form-select") }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="fw-bold">Monto ($) *</label>
+                                {{ form.monto(class="form-control", placeholder="0.00") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="fw-bold">Cuenta de Pago *</label>
+                                {{ form.cuenta_id(class="form-select") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="fw-bold">Estado del Pago *</label>
+                                {{ form.estado_pago(class="form-select", id="estado_pago") }}
+                            </div>
+                        </div>
+
+                        <div class="row" id="fecha_pago_container">
+                            <div class="col-md-6 mb-3">
+                                <label class="fw-bold">Fecha de Pago *</label>
+                                {{ form.fecha_pago(class="form-control", type="date") }}
+                                <small class="text-muted">Fecha en que se realizó el pago</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
                         {{ form.submit(class="btn btn-primary btn-lg") }}
                         <a href="{{ url_for('mantenimiento.inventario') }}" class="btn btn-outline-secondary">Cancelar</a>
                     </div>
@@ -55,4 +101,44 @@
         </div>
     </div>
 </div>
+
+<script>
+// Mostrar/ocultar sección de gasto según selección
+document.getElementById('registrar_gasto').addEventListener('change', function() {
+    const seccionGasto = document.getElementById('seccion_gasto');
+    if (this.value === 'SI') {
+        seccionGasto.style.display = 'block';
+    } else {
+        seccionGasto.style.display = 'none';
+    }
+});
+
+// Mostrar/ocultar fecha de pago según estado
+document.getElementById('estado_pago').addEventListener('change', function() {
+    const fechaPagoContainer = document.getElementById('fecha_pago_container');
+    if (this.value === 'PAGADO') {
+        fechaPagoContainer.style.display = 'block';
+    } else {
+        fechaPagoContainer.style.display = 'none';
+    }
+});
+
+// Ejecutar al cargar la página para mantener el estado correcto
+document.addEventListener('DOMContentLoaded', function() {
+    const registrarGasto = document.getElementById('registrar_gasto');
+    const estadoPago = document.getElementById('estado_pago');
+    
+    // Trigger inicial para registrar_gasto
+    if (registrarGasto.value === 'SI') {
+        document.getElementById('seccion_gasto').style.display = 'block';
+    }
+    
+    // Trigger inicial para estado_pago
+    if (estadoPago.value === 'PAGADO') {
+        document.getElementById('fecha_pago_container').style.display = 'block';
+    } else {
+        document.getElementById('fecha_pago_container').style.display = 'none';
+    }
+});
+</script>
 {% endblock %}

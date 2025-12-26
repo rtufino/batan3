@@ -2,7 +2,7 @@ import os
 from flask import Blueprint, render_template, redirect, url_for, flash, current_app
 from werkzeug.utils import secure_filename
 from app.extensions import db
-from app.models import Equipo, Mantenimiento
+from app.models import Equipo, Mantenimiento, Movimiento, Proveedor, Rubro, Cuenta
 from app.forms import MantenimientoForm, EquipoForm
 from datetime import datetime
 
@@ -37,32 +37,90 @@ def nuevo_registro():
     # Cargar equipos en el select
     form.equipo_id.choices = [(e.id, f"{e.nombre} ({e.ubicacion})") for e in Equipo.query.all()]
     
+    # Cargar proveedores, rubros y cuentas para el gasto
+    form.proveedor_id.choices = [(0, '-- Seleccione Proveedor --')] + [(p.id, p.nombre) for p in Proveedor.query.order_by(Proveedor.nombre).all()]
+    form.rubro_id.choices = [(0, '-- Seleccione Rubro --')] + [(r.id, r.nombre) for r in Rubro.query.filter_by(tipo='EGRESO').order_by(Rubro.nombre).all()]
+    form.cuenta_id.choices = [(0, '-- Seleccione Cuenta --')] + [(c.id, f"{c.nombre} (${c.saldo:.2f})") for c in Cuenta.query.all()]
+    
     if form.validate_on_submit():
-        # 1. Guardar fotos físicamente
-        foto_antes_nombre = guardar_imagen(form.foto_antes.data)
-        foto_despues_nombre = guardar_imagen(form.foto_despues.data)
-        
-        # 2. Guardar registro en BD
-        nuevo_mant = Mantenimiento(
-            equipo_id=form.equipo_id.data,
-            fecha=datetime.combine(form.fecha.data, datetime.min.time()),
-            descripcion=form.descripcion.data,
-            costo_referencial=form.costo_referencial.data,
-            foto_antes=foto_antes_nombre,
-            foto_despues=foto_despues_nombre
-        )
-        
         try:
+            # 1. Guardar fotos físicamente
+            foto_antes_nombre = guardar_imagen(form.foto_antes.data)
+            foto_despues_nombre = guardar_imagen(form.foto_despues.data)
+            
+            # 2. Si se va a registrar gasto, crear el movimiento primero
+            movimiento_id = None
+            if form.registrar_gasto.data == 'SI':
+                # Validar que se hayan llenado los campos del gasto
+                if not form.proveedor_id.data or form.proveedor_id.data == 0:
+                    flash('Debe seleccionar un proveedor para registrar el gasto', 'danger')
+                    return render_template('mantenimiento/nuevo_registro.html', form=form)
+                
+                if not form.rubro_id.data or form.rubro_id.data == 0:
+                    flash('Debe seleccionar un rubro para registrar el gasto', 'danger')
+                    return render_template('mantenimiento/nuevo_registro.html', form=form)
+                
+                if not form.monto.data or form.monto.data <= 0:
+                    flash('Debe ingresar un monto válido para registrar el gasto', 'danger')
+                    return render_template('mantenimiento/nuevo_registro.html', form=form)
+                
+                if not form.cuenta_id.data or form.cuenta_id.data == 0:
+                    flash('Debe seleccionar una cuenta para registrar el gasto', 'danger')
+                    return render_template('mantenimiento/nuevo_registro.html', form=form)
+                
+                # Crear el movimiento (gasto)
+                nuevo_movimiento = Movimiento(
+                    tipo='EGRESO',
+                    estado=form.estado_pago.data,
+                    monto=form.monto.data,
+                    fecha_emision=datetime.combine(form.fecha.data, datetime.min.time()),
+                    fecha_pago=datetime.combine(form.fecha_pago.data, datetime.min.time()) if form.estado_pago.data == 'PAGADO' and form.fecha_pago.data else None,
+                    descripcion=f"Mantenimiento: {form.descripcion.data}",
+                    rubro_id=form.rubro_id.data,
+                    proveedor_id=form.proveedor_id.data,
+                    cuenta_id=form.cuenta_id.data
+                )
+                
+                db.session.add(nuevo_movimiento)
+                db.session.flush()  # Para obtener el ID del movimiento
+                
+                # Si el gasto está PAGADO, actualizar el saldo de la cuenta
+                if form.estado_pago.data == 'PAGADO':
+                    cuenta = Cuenta.query.get(form.cuenta_id.data)
+                    cuenta.saldo -= float(form.monto.data)
+                
+                movimiento_id = nuevo_movimiento.id
+            
+            # 3. Guardar registro de mantenimiento en BD
+            nuevo_mant = Mantenimiento(
+                equipo_id=form.equipo_id.data,
+                fecha=datetime.combine(form.fecha.data, datetime.min.time()),
+                descripcion=form.descripcion.data,
+                costo_referencial=form.monto.data if form.registrar_gasto.data == 'SI' else 0.0,
+                foto_antes=foto_antes_nombre,
+                foto_despues=foto_despues_nombre,
+                movimiento_id=movimiento_id  # Vincular con el movimiento si existe
+            )
+            
             db.session.add(nuevo_mant)
             db.session.commit()
-            flash('Mantenimiento registrado con éxito.', 'success')
+            
+            if form.registrar_gasto.data == 'SI':
+                flash('Mantenimiento y gasto registrados con éxito.', 'success')
+            else:
+                flash('Mantenimiento registrado con éxito.', 'success')
+            
             return redirect(url_for('mantenimiento.inventario'))
+            
         except Exception as e:
             db.session.rollback()
-            flash(f'Error al guardar: {e}', 'danger')
+            flash(f'Error al guardar: {str(e)}', 'danger')
 
+    # Pre-llenar valores por defecto
     if not form.fecha.data:
         form.fecha.data = datetime.now().date()
+    if not form.fecha_pago.data:
+        form.fecha_pago.data = datetime.now().date()
 
     return render_template('mantenimiento/nuevo_registro.html', form=form)
 

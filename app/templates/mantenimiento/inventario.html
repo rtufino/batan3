@@ -10,13 +10,13 @@
     </ol>
 </nav>
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="text-secondary"><i class="fa-solid fa-screwdriver-wrench"></i> Inventario de Activos</h2>
+    <h2 class="text-secondary"><i class="fa-solid fa-screwdriver-wrench"></i> Inventario</h2>
     <div>
-        <a href="{{ url_for('mantenimiento.nuevo_registro') }}" class="btn btn-outline-primary me-2">
-            <i class="fa-solid fa-clipboard-check"></i> Registrar Mantenimiento
+        <a href="{{ url_for('mantenimiento.crear_equipo') }}" class="btn btn-success">
+            <i class="fa-solid fa-plus"></i> Nuevo
         </a>
-        <a href="{{ url_for('mantenimiento.crear_equipo') }}" class="btn btn-secondary">
-            <i class="fa-solid fa-plus"></i> Nuevo Equipo
+        <a href="{{ url_for('mantenimiento.nuevo_registro') }}" class="btn btn-warning me-2">
+            <i class="fa-solid fa-clipboard-check"></i> Registrar
         </a>
     </div>
 </div>

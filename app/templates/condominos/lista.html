@@ -13,7 +13,7 @@
     
     <div class="d-flex gap-2">
         <a href="{{ url_for('condominos.nuevo_departamento') }}" class="btn btn-success shadow-sm">
-            <i class="fa-solid fa-plus"></i> Nuevo Departamento
+            <i class="fa-solid fa-plus"></i> Nuevo
         </a>
         <form action="{{ url_for('condominos.generar_mensualidad') }}" method="POST" onsubmit="return confirm('¿Deseas generar los cargos de expensas para todos los departamentos este mes?');">
             <button type="submit" class="btn btn-warning shadow-sm">

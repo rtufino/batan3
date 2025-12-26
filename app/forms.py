@@ -32,9 +32,6 @@ class MantenimientoForm(FlaskForm):
     fecha = DateField('Fecha del Trabajo', validators=[DataRequired()], format='%Y-%m-%d')
     descripcion = StringField('Descripción del Trabajo', validators=[DataRequired()])
     
-    # Costo referencial (no afecta caja, es solo informativo para el historial técnico)
-    costo_referencial = DecimalField('Costo Referencial ($)', places=2, default=0.0)
-    
     # Archivos de evidencia
     foto_antes = FileField('Foto Antes (Opcional)', validators=[
         FileAllowed(['jpg', 'png', 'jpeg'], 'Solo imágenes!')
@@ -42,6 +39,23 @@ class MantenimientoForm(FlaskForm):
     foto_despues = FileField('Foto Después (Opcional)', validators=[
         FileAllowed(['jpg', 'png', 'jpeg'], 'Solo imágenes!')
     ])
+    
+    # --- CAMPOS PARA REGISTRO DE GASTO ---
+    registrar_gasto = SelectField('¿Registrar Gasto Asociado?', choices=[
+        ('SI', 'Sí, registrar gasto'),
+        ('NO', 'No, solo registro técnico')
+    ], validators=[DataRequired()], default='SI')
+    
+    # Campos del gasto (se muestran/ocultan según registrar_gasto)
+    proveedor_id = SelectField('Proveedor / Beneficiario', coerce=int, validators=[Optional()])
+    rubro_id = SelectField('Rubro del Gasto', coerce=int, validators=[Optional()])
+    monto = DecimalField('Monto del Gasto ($)', places=2, validators=[Optional(), NumberRange(min=0.01)])
+    cuenta_id = SelectField('Cuenta de Pago', coerce=int, validators=[Optional()])
+    estado_pago = SelectField('Estado del Pago', choices=[
+        ('PAGADO', 'Pagado'),
+        ('PENDIENTE', 'Pendiente')
+    ], validators=[Optional()], default='PAGADO')
+    fecha_pago = DateField('Fecha de Pago', validators=[Optional()], format='%Y-%m-%d')
     
     submit = SubmitField('Registrar Mantenimiento')
 
