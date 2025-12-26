@@ -6,7 +6,7 @@ from datetime import datetime
 from sqlalchemy import extract
 from sqlalchemy.exc import IntegrityError
 
-from app.utils import generar_pdf_aviso, notificar_aviso_cobro, notificar_recibo_pago, generar_pdf_recibo
+from app.utils import generar_pdf_aviso, notificar_aviso_cobro, notificar_recibo_pago, generar_pdf_recibo, generar_pdf_estado_cuenta
 
 import os
 import io
@@ -490,3 +490,27 @@ def agregar_cargo_manual(depto_id):
         form.fecha_pago.data = datetime.now().date()
     
     return render_template('condominos/agregar_cargo.html', form=form, depto=depto)
+
+@condominos_bp.route('/estado-cuenta-pdf/<int:id>')
+def descargar_estado_cuenta_pdf(id):
+    """
+    Genera y descarga el PDF del estado de cuenta con los últimos 12 movimientos.
+    """
+    depto = Departamento.query.get_or_404(id)
+    
+    # Obtener los últimos 12 movimientos
+    movimientos = Movimiento.query.filter_by(departamento_id=id)\
+        .order_by(Movimiento.fecha_emision.desc())\
+        .limit(12)\
+        .all()
+    
+    # Generar el PDF
+    pdf_content = generar_pdf_estado_cuenta(depto, movimientos)
+    
+    # Retornar el PDF
+    return send_file(
+        io.BytesIO(pdf_content),
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f"Estado_Cuenta_{depto.numero}_{datetime.now().strftime('%Y%m%d')}.pdf"
+    )

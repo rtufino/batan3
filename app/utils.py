@@ -478,3 +478,137 @@ def generar_link_whatsapp(persona, depto, monto_total):
     
     mensaje_codificado = urllib.parse.quote(mensaje)
     return f"https://wa.me/{tel}?text={mensaje_codificado}"
+
+def generar_pdf_estado_cuenta(depto, movimientos):
+    """
+    Genera un PDF con el estado de cuenta del departamento y los últimos movimientos.
+    Todo en una sola página A4 vertical.
+    
+    Args:
+        depto: Objeto Departamento
+        movimientos: Lista de movimientos (máximo 12)
+    
+    Returns:
+        bytes del PDF generado
+    """
+    from datetime import datetime
+    
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=False)  # Desactivar salto automático para controlar el espacio
+    
+    # --- ENCABEZADO ---
+    pdf.set_font('Helvetica', 'B', 14)
+    pdf.cell(0, 8, 'EDIFICIO BATAN III', ln=1, align='C')
+    pdf.set_font('Helvetica', '', 9)
+    pdf.cell(0, 5, 'RUC: 1792211255001 | Quito - Ecuador', ln=1, align='C')
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 6, 'ESTADO DE CUENTA', ln=1, align='C')
+    pdf.set_font('Helvetica', '', 8)
+    pdf.cell(0, 4, f"Fecha de Emisión: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=1, align='C')
+    pdf.ln(3)
+    
+    # --- INFORMACIÓN DEL DEPARTAMENTO ---
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.cell(0, 6, f"DEPARTAMENTO: {depto.numero}", ln=1, fill=True)
+    
+    pdf.set_font('Helvetica', '', 9)
+    propietario = next((p for p in depto.personas if p.rol == 'PROPIETARIO'), None)
+    if propietario:
+        pdf.cell(0, 5, f"Propietario: {propietario.nombre}", ln=1)
+    
+    pdf.cell(95, 5, f"Piso: {depto.piso if depto.piso > 0 else 'Planta Baja'}", ln=0)
+    pdf.cell(95, 5, f"Alícuota: {depto.alicuota}%", ln=1)
+    
+    # Saldo pendiente destacado
+    pdf.ln(2)
+    if depto.saldo_pendiente > 0:
+        pdf.set_fill_color(255, 235, 238)  # Rojo claro
+        pdf.set_text_color(200, 0, 0)  # Rojo
+    else:
+        pdf.set_fill_color(212, 237, 218)  # Verde claro
+        pdf.set_text_color(0, 128, 0)  # Verde
+    
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.cell(0, 7, f"SALDO PENDIENTE: $ {depto.saldo_pendiente:.2f}", ln=1, align='C', fill=True, border=1)
+    pdf.set_text_color(0, 0, 0)  # Volver a negro
+    pdf.ln(3)
+    
+    # --- HISTORIAL DE MOVIMIENTOS ---
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.cell(0, 6, "ÚLTIMOS MOVIMIENTOS (Máximo 12)", ln=1)
+    pdf.ln(1)
+    
+    # Encabezados de tabla
+    pdf.set_fill_color(52, 73, 94)  # Azul oscuro
+    pdf.set_text_color(255, 255, 255)  # Blanco
+    pdf.set_font('Helvetica', 'B', 8)
+    
+    pdf.cell(22, 6, "F. Emisión", border=1, align='C', fill=True)
+    pdf.cell(22, 6, "F. Pago", border=1, align='C', fill=True)
+    pdf.cell(70, 6, "Descripción", border=1, align='C', fill=True)
+    pdf.cell(20, 6, "Estado", border=1, align='C', fill=True)
+    pdf.cell(25, 6, "Monto", border=1, align='C', fill=True)
+    pdf.cell(31, 6, "Rubro", border=1, align='C', fill=True, ln=1)
+    
+    # Resetear colores para el contenido
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font('Helvetica', '', 7)
+    
+    # Limitar a 12 movimientos para que quepa en una página
+    movimientos_mostrar = movimientos[:12] if len(movimientos) > 12 else movimientos
+    
+    for mov in movimientos_mostrar:
+        # Alternar color de fondo
+        if movimientos_mostrar.index(mov) % 2 == 0:
+            pdf.set_fill_color(255, 255, 255)  # Blanco
+        else:
+            pdf.set_fill_color(245, 245, 245)  # Gris muy claro
+        
+        # Fecha emisión
+        pdf.cell(22, 5, mov.fecha_emision.strftime('%d/%m/%Y'), border=1, align='C', fill=True)
+        
+        # Fecha pago
+        fecha_pago_str = mov.fecha_pago.strftime('%d/%m/%Y') if mov.fecha_pago else '-'
+        pdf.cell(22, 5, fecha_pago_str, border=1, align='C', fill=True)
+        
+        # Descripción (truncar si es muy larga)
+        descripcion = mov.descripcion[:35] + '...' if len(mov.descripcion) > 35 else mov.descripcion
+        pdf.cell(70, 5, descripcion, border=1, fill=True)
+        
+        # Estado
+        estado_texto = 'PAGADO' if mov.estado == 'PAGADO' else 'PENDIENTE'
+        pdf.cell(20, 5, estado_texto, border=1, align='C', fill=True)
+        
+        # Monto (con color según estado)
+        if mov.estado == 'PENDIENTE':
+            pdf.set_text_color(200, 0, 0)  # Rojo para pendiente
+            monto_texto = f"+ ${mov.monto:.2f}"
+        else:
+            pdf.set_text_color(0, 128, 0)  # Verde para pagado
+            monto_texto = f"- ${mov.monto:.2f}"
+        
+        pdf.cell(25, 5, monto_texto, border=1, align='R', fill=True)
+        pdf.set_text_color(0, 0, 0)  # Volver a negro
+        
+        # Rubro (truncar si es muy largo)
+        rubro_nombre = mov.rubro.nombre[:15] + '...' if len(mov.rubro.nombre) > 15 else mov.rubro.nombre
+        pdf.cell(31, 5, rubro_nombre, border=1, align='C', fill=True, ln=1)
+    
+    # Si no hay movimientos
+    if not movimientos_mostrar:
+        pdf.set_font('Helvetica', 'I', 9)
+        pdf.cell(0, 8, "No hay movimientos registrados", border=1, align='C', ln=1)
+    
+    # --- PIE DE PÁGINA ---
+    pdf.ln(5)
+    pdf.set_font('Helvetica', '', 7)
+    pdf.set_text_color(128, 128, 128)  # Gris
+    pdf.multi_cell(0, 3, "Nota: Este documento es un estado de cuenta informativo generado por el sistema de administración del Edificio Batan III. Para consultas o aclaraciones, contactar a edificio.batan3@gmail.com o WhatsApp: 0992923858")
+    
+    # Línea de generación
+    pdf.ln(2)
+    pdf.cell(0, 3, f"Documento generado el {datetime.now().strftime('%d/%m/%Y a las %H:%M')}", align='C')
+    
+    return pdf.output(dest='S')

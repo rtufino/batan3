@@ -14,6 +14,7 @@
         <h2 class="mb-0">Departamento {{ depto.numero }}</h2>
     </div>
     <div class="col-md-6 text-end">
+       
         <span class="badge {% if depto.saldo_pendiente > 0 %}bg-danger{% else %}bg-success{% endif %} fs-5">
             Saldo Total: ${{ "%.2f"|format(depto.saldo_pendiente) }}
         </span>
@@ -49,9 +50,14 @@
                 <div class="d-flex align-items-center gap-2">
                     <!-- Botón Agregar Cargo -->
                     <a href="{{ url_for('condominos.agregar_cargo_manual', depto_id=depto.id) }}"
-                       class="btn btn-sm btn-success me-2"
+                       class="btn btn-sm btn-warning me-2"
                        title="Registrar cargo manual">
-                        <i class="fa-solid fa-plus"></i> Registrar Cargo
+                        <i class="fa-solid fa-plus"></i> Cargo
+                    </a>
+                    <a href="{{ url_for('condominos.descargar_estado_cuenta_pdf', id=depto.id) }}"
+                    class="btn btn-primary btn-sm me-2"
+                    title="Descargar Estado de Cuenta en PDF">
+                        <i class="fa-solid fa-file-pdf"></i> Descargar
                     </a>
                     
                     <!-- Selector de registros por página -->
