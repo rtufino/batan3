@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Proveedores{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.index') }}">Configuración</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Proveedores</li>
+    </ol>
+</nav>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2 class="mb-0"><i class="fa-solid fa-users"></i> Gestión de Proveedores/Beneficiarios</h2>
+        <p class="text-muted">Administra los proveedores de servicios y beneficiarios de pagos</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('config.nuevo_proveedor') }}" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Nuevo Proveedor
+        </a>
+    </div>
+</div>
+
+<!-- Proveedores por Categoría -->
+{% set categorias = {
+    'SERVICIOS_BASICOS': {'nombre': 'Servicios Básicos', 'icono': 'fa-bolt', 'color': 'primary'},
+    'MANTENIMIENTO': {'nombre': 'Mantenimiento', 'icono': 'fa-wrench', 'color': 'warning'},
+    'NOMINA': {'nombre': 'Nómina', 'icono': 'fa-money-bill-wave', 'color': 'success'},
+    'OTROS': {'nombre': 'Otros', 'icono': 'fa-ellipsis', 'color': 'secondary'}
+} %}
+
+{% for cat_key, cat_info in categorias.items() %}
+    {% set proveedores_cat = proveedores_data | selectattr('proveedor.categoria', 'equalto', cat_key) | list %}
+    
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-{{ cat_info.color }} text-white">
+            <h5 class="mb-0"><i class="fa-solid {{ cat_info.icono }}"></i> {{ cat_info.nombre }}</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>RUC/Cédula</th>
+                        <th>Teléfono</th>
+                        <th class="text-center">Movimientos</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if proveedores_cat %}
+                        {% for item in proveedores_cat %}
+                        <tr>
+                            <td><strong>{{ item.proveedor.nombre }}</strong></td>
+                            <td>{{ item.proveedor.ruc_cedula or '-' }}</td>
+                            <td>{{ item.proveedor.telefono or '-' }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-info">{{ item.num_movimientos }}</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('config.editar_proveedor', id=item.proveedor.id) }}" class="btn btn-warning" title="Editar">
+                                        <i class="fa-solid fa-edit"></i>
+                                    </a>
+                                    
+                                    {% if item.puede_eliminar %}
+                                        <form method="POST" action="{{ url_for('config.eliminar_proveedor', id=item.proveedor.id) }}" style="display: inline;">
+                                            <button type="submit" class="btn btn-danger btn-sm" title="Eliminar" onclick="return confirm('¿Está seguro de eliminar este proveedor?')">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <button class="btn btn-secondary" disabled title="No se puede eliminar (tiene movimientos)">
+                                            <i class="fa-solid fa-ban"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                No hay proveedores en esta categoría
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endfor %}
+
+<div class="alert alert-info mt-4">
+    <strong><i class="fa-solid fa-info-circle"></i> Información:</strong>
+    <ul class="mb-0 mt-2">
+        <li>Los proveedores se organizan por categorías para facilitar su gestión</li>
+        <li>No se pueden eliminar proveedores que tengan movimientos asociados</li>
+        <li><strong>Servicios Básicos:</strong> Empresas de luz, agua, internet, etc.</li>
+        <li><strong>Mantenimiento:</strong> Técnicos, empresas de mantenimiento, etc.</li>
+        <li><strong>Nómina:</strong> Empleados del edificio (conserje, administrador, etc.)</li>
+        <li><strong>Otros:</strong> Cualquier otro tipo de proveedor o beneficiario</li>
+    </ul>
+</div>
+{% endblock %}

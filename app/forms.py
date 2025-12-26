@@ -163,3 +163,15 @@ class RubroForm(FlaskForm):
         ('EGRESO', 'Egreso')
     ], validators=[DataRequired()])
     submit = SubmitField('Guardar Rubro')
+
+class ProveedorForm(FlaskForm):
+    nombre = StringField('Nombre del Proveedor/Beneficiario', validators=[DataRequired()])
+    ruc_cedula = StringField('RUC / Cédula', validators=[Optional()])
+    telefono = StringField('Teléfono de Contacto', validators=[Optional()])
+    categoria = SelectField('Categoría', choices=[
+        ('SERVICIOS_BASICOS', 'Servicios Básicos'),
+        ('MANTENIMIENTO', 'Mantenimiento'),
+        ('NOMINA', 'Nómina'),
+        ('OTROS', 'Otros')
+    ], validators=[DataRequired()])
+    submit = SubmitField('Guardar Proveedor')

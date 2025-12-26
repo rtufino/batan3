@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.lista_rubros') }}">Configuración</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.lista_proveedores') }}">Proveedores</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ titulo }}</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-user-tie"></i> {{ titulo }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="nombre" class="form-label fw-bold">
+                                <i class="fa-solid fa-signature"></i> Nombre del Proveedor/Beneficiario *
+                            </label>
+                            {{ form.nombre(class="form-control", placeholder="Ej: Empresa Eléctrica Quito, Juan Pérez (Conserje)") }}
+                            {% if form.nombre.errors %}
+                                <div class="text-danger small mt-1">{{ form.nombre.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">
+                                Nombre completo de la empresa o persona
+                            </small>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="categoria" class="form-label fw-bold">
+                                <i class="fa-solid fa-folder"></i> Categoría *
+                            </label>
+                            {{ form.categoria(class="form-select") }}
+                            {% if form.categoria.errors %}
+                                <div class="text-danger small mt-1">{{ form.categoria.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ruc_cedula" class="form-label fw-bold">
+                                <i class="fa-solid fa-id-card"></i> RUC / Cédula
+                            </label>
+                            {{ form.ruc_cedula(class="form-control", placeholder="Ej: 1234567890001") }}
+                            {% if form.ruc_cedula.errors %}
+                                <div class="text-danger small mt-1">{{ form.ruc_cedula.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">
+                                Número de identificación fiscal (opcional)
+                            </small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="telefono" class="form-label fw-bold">
+                                <i class="fa-solid fa-phone"></i> Teléfono de Contacto
+                            </label>
+                            {{ form.telefono(class="form-control", placeholder="Ej: 0987654321") }}
+                            {% if form.telefono.errors %}
+                                <div class="text-danger small mt-1">{{ form.telefono.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">
+                                Número de teléfono o celular (opcional)
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('config.lista_proveedores') }}" class="btn btn-secondary">
+                            <i class="fa-solid fa-times"></i> Cancelar
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Información adicional -->
+        <div class="alert alert-info mt-3">
+            <strong><i class="fa-solid fa-lightbulb"></i> Información sobre Categorías:</strong>
+            <ul class="mb-0 mt-2">
+                <li><strong>Servicios Básicos:</strong> Empresas de luz, agua, internet, teléfono, gas, etc.</li>
+                <li><strong>Mantenimiento:</strong> Técnicos, empresas de limpieza, jardinería, reparaciones, etc.</li>
+                <li><strong>Nómina:</strong> Empleados del edificio como conserje, administrador, contador, etc.</li>
+                <li><strong>Otros:</strong> Cualquier otro tipo de proveedor o beneficiario de pagos</li>
+            </ul>
+        </div>
+
+        <div class="alert alert-warning mt-2">
+            <strong><i class="fa-solid fa-exclamation-triangle"></i> Nota:</strong>
+            No podrás eliminar proveedores que tengan movimientos (pagos) asociados en el sistema.
+        </div>
+    </div>
+</div>
+{% endblock %}

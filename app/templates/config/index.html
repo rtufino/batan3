@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración del Sistema{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Configuración</li>
+    </ol>
+</nav>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-0"><i class="fa-solid fa-cog"></i> Configuración del Sistema</h2>
+        <p class="text-muted">Administra los parámetros y catálogos del sistema</p>
+    </div>
+</div>
+
+<!-- Cards de Configuración -->
+<div class="row g-4">
+    <!-- Card Rubros -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100 hover-card">
+            <div class="card-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fa-solid fa-tags fa-4x text-primary"></i>
+                </div>
+                <h4 class="card-title mb-3">Rubros</h4>
+                <p class="card-text text-muted mb-4">
+                    Administra las categorías de ingresos y egresos del edificio. 
+                    Define los conceptos para clasificar todos los movimientos financieros.
+                </p>
+                <a href="{{ url_for('config.lista_rubros') }}" class="btn btn-primary btn-lg">
+                    <i class="fa-solid fa-arrow-right"></i> Gestionar Rubros
+                </a>
+            </div>
+            <div class="card-footer bg-light text-center">
+                <small class="text-muted">
+                    <i class="fa-solid fa-info-circle"></i> 
+                    Ejemplos: Expensas Ordinarias, Agua, Luz, Mantenimiento
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Proveedores -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100 hover-card">
+            <div class="card-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fa-solid fa-users fa-4x text-success"></i>
+                </div>
+                <h4 class="card-title mb-3">Proveedores / Beneficiarios</h4>
+                <p class="card-text text-muted mb-4">
+                    Gestiona el catálogo de proveedores de servicios y beneficiarios de pagos. 
+                    Organiza por categorías: servicios básicos, mantenimiento, nómina y otros.
+                </p>
+                <a href="{{ url_for('config.lista_proveedores') }}" class="btn btn-success btn-lg">
+                    <i class="fa-solid fa-arrow-right"></i> Gestionar Proveedores
+                </a>
+            </div>
+            <div class="card-footer bg-light text-center">
+                <small class="text-muted">
+                    <i class="fa-solid fa-info-circle"></i> 
+                    Ejemplos: Empresa Eléctrica, Conserje, Técnico de Ascensores
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información adicional -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h5 class="alert-heading"><i class="fa-solid fa-lightbulb"></i> Acerca de la Configuración</h5>
+            <hr>
+            <p class="mb-0">
+                Esta sección te permite configurar los catálogos maestros del sistema. 
+                Los <strong>Rubros</strong> se utilizan para clasificar todos los movimientos financieros (ingresos y egresos), 
+                mientras que los <strong>Proveedores</strong> representan las entidades a las que se realizan pagos o de las que se reciben servicios.
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}
