@@ -14,8 +14,14 @@
                     {{ form.hidden_tag() }}
 
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Categoría del Proveedor</label>
+                        {{ form.categoria_proveedor(class="form-select form-select-lg", id="categoria_proveedor") }}
+                        <div class="form-text">Seleccione primero la categoría del proveedor</div>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label fw-bold">Proveedor / Beneficiario</label>
-                        {{ form.proveedor_id(class="form-select form-select-lg") }}
+                        {{ form.proveedor_id(class="form-select form-select-lg", id="proveedor_id") }}
                         <div class="form-text">¿A quién le estamos pagando?</div>
                     </div>
 
@@ -102,6 +108,39 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Ejecutar cuando cambie el estado
     estadoSelect.addEventListener('change', actualizarFechaPago);
+
+    // Script para filtrar proveedores por categoría
+    const categoriaProveedorSelect = document.getElementById('categoria_proveedor');
+    const proveedorSelect = document.getElementById('proveedor_id');
+
+    // Datos de proveedores por categoría
+    const proveedores = {{ proveedores_data | tojson | safe }};
+
+    function filtrarProveedores() {
+        const categoriaSeleccionada = categoriaProveedorSelect.value;
+        
+        // Limpiar opciones actuales
+        proveedorSelect.innerHTML = '<option value="">Seleccione un proveedor</option>';
+        
+        // Si no hay categoría seleccionada, salir
+        if (!categoriaSeleccionada) return;
+        
+        // Filtrar y agregar proveedores de la categoría
+        const proveedoresFiltrados = proveedores[categoriaSeleccionada] || [];
+        
+        proveedoresFiltrados.forEach(proveedor => {
+            const option = document.createElement('option');
+            option.value = proveedor.id;
+            option.textContent = proveedor.nombre;
+            proveedorSelect.appendChild(option);
+        });
+    }
+
+    // Agregar evento de cambio
+    categoriaProveedorSelect.addEventListener('change', filtrarProveedores);
+    
+    // Ejecutar al cargar la página por si ya hay una categoría seleccionada
+    filtrarProveedores();
 });
 </script>
 {% endblock %}

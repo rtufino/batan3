@@ -6,6 +6,15 @@ from wtforms.validators import DataRequired, NumberRange, Optional, Email
 from app.models import Proveedor
 
 class GastoForm(FlaskForm):
+    # Categoría del Proveedor
+    categoria_proveedor = SelectField('Categoría del Proveedor', choices=[
+        ('', 'Seleccione una categoría'),
+        ('SERVICIOS_BASICOS', 'Servicios Básicos'),
+        ('MANTENIMIENTO', 'Mantenimiento'),
+        ('NOMINA', 'Nómina'),
+        ('OTROS', 'Otros')
+    ], validators=[Optional()])
+    
     # A quién le pagamos (Empresa eléctrica, Conserje, Ferretería)
     proveedor_id = SelectField('Proveedor / Beneficiario', validators=[DataRequired()], coerce=int)
     

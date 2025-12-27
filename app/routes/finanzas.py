@@ -13,6 +13,11 @@ def nuevo_gasto():
     form = GastoForm()
     
     # 1. Cargar opciones
+    proveedores_servicios_basicos = Proveedor.query.filter_by(categoria='SERVICIOS_BASICOS').all()
+    proveedores_mantenimiento = Proveedor.query.filter_by(categoria='MANTENIMIENTO').all()
+    proveedores_nomina = Proveedor.query.filter_by(categoria='NOMINA').all()
+    proveedores_otros = Proveedor.query.filter_by(categoria='OTROS').all()
+    
     form.proveedor_id.choices = [(p.id, f"{p.nombre} ({p.categoria})") for p in Proveedor.query.all()]
     form.rubro_id.choices = [(r.id, r.nombre) for r in Rubro.query.filter_by(tipo='EGRESO').all()]
     form.cuenta_id.choices = [(c.id, f"{c.nombre} - ${c.saldo:.2f}") for c in Cuenta.query.all()]
@@ -70,7 +75,17 @@ def nuevo_gasto():
     if not form.fecha_pago.data and form.estado.data == 'PAGADO':
         form.fecha_pago.data = datetime.now().date()
 
-    return render_template('finanzas/nuevo_gasto.html', form=form)
+    # Preparar datos de proveedores para JavaScript
+    proveedores_data = {
+        'SERVICIOS_BASICOS': [{'id': p.id, 'nombre': p.nombre} for p in proveedores_servicios_basicos],
+        'MANTENIMIENTO': [{'id': p.id, 'nombre': p.nombre} for p in proveedores_mantenimiento],
+        'NOMINA': [{'id': p.id, 'nombre': p.nombre} for p in proveedores_nomina],
+        'OTROS': [{'id': p.id, 'nombre': p.nombre} for p in proveedores_otros]
+    }
+
+    return render_template('finanzas/nuevo_gasto.html',
+                           form=form,
+                           proveedores_data=proveedores_data)
 
 # 1. RUTA PARA VER EL HISTORIAL
 @finanzas_bp.route('/historial')
