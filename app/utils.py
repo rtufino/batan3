@@ -493,7 +493,6 @@ def formatear_telefono_whatsapp(telefono):
 
 def generar_link_whatsapp(persona, depto, monto_total):
     tel = formatear_telefono_whatsapp(persona.telefono)
-    print(tel)
     if not tel:
         return None
     
