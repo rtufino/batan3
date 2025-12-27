@@ -46,6 +46,9 @@
                         <th>Nombre</th>
                         <th>RUC/Cédula</th>
                         <th>Teléfono</th>
+                        {% if cat_key == 'NOMINA' %}
+                            <th>Información Bancaria</th>
+                        {% endif %}
                         <th class="text-center">Movimientos</th>
                         <th class="text-center">Acciones</th>
                     </tr>
@@ -57,6 +60,16 @@
                             <td><strong>{{ item.proveedor.nombre }}</strong></td>
                             <td>{{ item.proveedor.ruc_cedula or '-' }}</td>
                             <td>{{ item.proveedor.telefono or '-' }}</td>
+                            {% if cat_key == 'NOMINA' %}
+                                <td>
+                                    {% if item.proveedor.banco and item.proveedor.numero_cuenta %}
+                                        <strong>{{ item.proveedor.banco }}</strong><br>
+                                        {{ item.proveedor.tipo_cuenta }} - {{ item.proveedor.numero_cuenta }}
+                                    {% else %}
+                                        <span class="text-danger">Sin datos bancarios</span>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
                             <td class="text-center">
                                 <span class="badge bg-info">{{ item.num_movimientos }}</span>
                             </td>

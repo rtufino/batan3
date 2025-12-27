@@ -160,6 +160,10 @@ def nuevo_proveedor():
             nombre=form.nombre.data,
             ruc_cedula=form.ruc_cedula.data,
             telefono=form.telefono.data,
+            email=form.email.data,
+            banco=form.banco.data,
+            tipo_cuenta=form.tipo_cuenta.data,
+            numero_cuenta=form.numero_cuenta.data,
             categoria=form.categoria.data
         )
         
@@ -194,6 +198,10 @@ def editar_proveedor(id):
         proveedor.nombre = form.nombre.data
         proveedor.ruc_cedula = form.ruc_cedula.data
         proveedor.telefono = form.telefono.data
+        proveedor.email = form.email.data
+        proveedor.banco = form.banco.data
+        proveedor.tipo_cuenta = form.tipo_cuenta.data
+        proveedor.numero_cuenta = form.numero_cuenta.data
         proveedor.categoria = form.categoria.data
         
         try:

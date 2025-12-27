@@ -2,7 +2,7 @@ from datetime import datetime
 from flask_wtf import FlaskForm
 from wtforms import StringField, DecimalField, DateField, SelectField, SubmitField, TextAreaField
 from flask_wtf.file import FileField, FileAllowed
-from wtforms.validators import DataRequired, NumberRange, Optional
+from wtforms.validators import DataRequired, NumberRange, Optional, Email
 from app.models import Proveedor
 
 class GastoForm(FlaskForm):
@@ -182,12 +182,24 @@ class ProveedorForm(FlaskForm):
     nombre = StringField('Nombre del Proveedor/Beneficiario', validators=[DataRequired()])
     ruc_cedula = StringField('RUC / Cédula', validators=[Optional()])
     telefono = StringField('Teléfono de Contacto', validators=[Optional()])
+    email = StringField('Correo Electrónico', validators=[Optional(), Email()])
+    
+    # Información Bancaria
+    banco = StringField('Banco', validators=[Optional()])
+    tipo_cuenta = SelectField('Tipo de Cuenta', choices=[
+        ('', 'Seleccione...'),
+        ('CORRIENTE', 'Cuenta Corriente'),
+        ('AHORRO', 'Cuenta de Ahorros')
+    ], validators=[Optional()])
+    numero_cuenta = StringField('Número de Cuenta', validators=[Optional()])
+    
     categoria = SelectField('Categoría', choices=[
         ('SERVICIOS_BASICOS', 'Servicios Básicos'),
         ('MANTENIMIENTO', 'Mantenimiento'),
         ('NOMINA', 'Nómina'),
         ('OTROS', 'Otros')
     ], validators=[DataRequired()])
+    
     submit = SubmitField('Guardar Proveedor')
 
 class CuentaForm(FlaskForm):

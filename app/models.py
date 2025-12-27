@@ -210,7 +210,7 @@ class PersonaContacto(db.Model):
 
 class Proveedor(db.Model):
     """
-    Sirve para proveedores externos (Ej. Empresa Eléctrica) 
+    Sirve para proveedores externos (Ej. Empresa Eléctrica)
     y para empleados (Ej. Conserje, Jubilado Patronal).
     """
     __tablename__ = 'proveedor'
@@ -219,6 +219,12 @@ class Proveedor(db.Model):
     nombre = db.Column(db.String(100), nullable=False)
     ruc_cedula = db.Column(db.String(20), nullable=True)
     telefono = db.Column(db.String(20), nullable=True)
+    email = db.Column(db.String(120), nullable=True)
+    
+    # Información Bancaria
+    banco = db.Column(db.String(100), nullable=True)
+    tipo_cuenta = db.Column(db.String(20), nullable=True)  # 'CORRIENTE' o 'AHORRO'
+    numero_cuenta = db.Column(db.String(50), nullable=True)
     
     # Categoría: 'SERVICIOS_BASICOS', 'MANTENIMIENTO', 'NOMINA', 'OTROS'
     categoria = db.Column(db.String(50), nullable=False, default='OTROS')
