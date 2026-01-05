@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, make_response, request
 from app.extensions import db
 from app.models import Movimiento, Departamento, Rubro, Cuenta, Proveedor
-from app.forms import ConfirmarPagoForm, GastoForm, TransferenciaForm
+from app.forms import ConfirmarPagoForm, GastoForm, TransferenciaForm, EditarGastoForm
 from app.utils import generar_pdf_recibo
 from datetime import datetime
 from sqlalchemy import func, extract
@@ -290,8 +290,73 @@ def reportes():
         Movimiento.estado == 'PENDIENTE'
     ).group_by(Departamento.numero).order_by(func.sum(Movimiento.monto).desc()).limit(5).all()
 
-    return render_template('finanzas/reportes.html', 
-                           labels_gastos=labels_gastos, 
-                           values_gastos=values_gastos,
-                           morosidad=morosidad,
-                           mes_anio=hoy.strftime('%m / %Y'))
+    return render_template('finanzas/reportes.html',
+                            labels_gastos=labels_gastos,
+                            values_gastos=values_gastos,
+                            morosidad=morosidad,
+                            mes_anio=hoy.strftime('%m / %Y'))
+
+@finanzas_bp.route('/gasto/editar/<int:id>', methods=['GET', 'POST'])
+def editar_gasto(id):
+    """Editar un gasto pendiente"""
+    movimiento = Movimiento.query.get_or_404(id)
+    
+    # Solo se pueden editar gastos pendientes
+    if movimiento.estado != 'PENDIENTE':
+        flash('Solo se pueden editar gastos pendientes.', 'warning')
+        return redirect(url_for('finanzas.historial'))
+    
+    form = EditarGastoForm()
+    
+    # Cargar opciones de selección
+    form.proveedor_id.choices = [(p.id, f"{p.nombre} ({p.categoria})") for p in Proveedor.query.all()]
+    form.rubro_id.choices = [(r.id, r.nombre) for r in Rubro.query.filter_by(tipo='EGRESO').all()]
+    form.cuenta_id.choices = [(c.id, f"{c.nombre} - ${c.saldo:.2f}") for c in Cuenta.query.all()]
+    
+    if form.validate_on_submit():
+        try:
+            # Actualizar campos del movimiento
+            movimiento.proveedor_id = form.proveedor_id.data
+            movimiento.rubro_id = form.rubro_id.data
+            movimiento.cuenta_id = form.cuenta_id.data
+            movimiento.monto = form.monto.data
+            movimiento.fecha_emision = datetime.combine(form.fecha_emision.data, datetime.min.time())
+            movimiento.descripcion = form.descripcion.data
+            
+            db.session.commit()
+            flash('Gasto actualizado exitosamente.', 'success')
+            return redirect(url_for('finanzas.historial'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar el gasto: {str(e)}', 'danger')
+    
+    # Cargar datos iniciales del movimiento
+    if request.method == 'GET':
+        form.proveedor_id.data = movimiento.proveedor_id
+        form.rubro_id.data = movimiento.rubro_id
+        form.cuenta_id.data = movimiento.cuenta_id
+        form.monto.data = movimiento.monto
+        form.fecha_emision.data = movimiento.fecha_emision.date()
+        form.descripcion.data = movimiento.descripcion
+    
+    return render_template('finanzas/editar_gasto.html', form=form, movimiento=movimiento)
+
+@finanzas_bp.route('/gasto/eliminar/<int:id>', methods=['POST'])
+def eliminar_gasto(id):
+    """Eliminar un gasto pendiente"""
+    movimiento = Movimiento.query.get_or_404(id)
+    
+    # Solo se pueden eliminar gastos pendientes
+    if movimiento.estado != 'PENDIENTE':
+        flash('Solo se pueden eliminar gastos pendientes.', 'warning')
+        return redirect(url_for('finanzas.historial'))
+    
+    try:
+        db.session.delete(movimiento)
+        db.session.commit()
+        flash('Gasto eliminado exitosamente.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar el gasto: {str(e)}', 'danger')
+    
+    return redirect(url_for('finanzas.historial'))

@@ -166,17 +166,30 @@
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
-                                    {% if m.estado == 'PENDIENTE' %}
-                                    <a href="{{ url_for('finanzas.registrar_pago', id=m.id) }}"
-                                        class="btn btn-success" title="Registrar Pago">
-                                        <i class="fa-solid fa-dollar-sign"></i>
-                                    </a>
-                                    {% endif %}
                                     <a href="{{ url_for('finanzas.descargar_recibo', id=m.id) }}" target="_blank"
                                         class="btn btn-secondary" title="Imprimir Recibo">
                                         <i class="fa-solid fa-print"></i>
                                     </a>
+                                    {% if m.estado == 'PENDIENTE' and m.tipo == 'EGRESO' %}
+                                    <a href="{{ url_for('finanzas.registrar_pago', id=m.id) }}"
+                                        class="btn btn-success" title="Registrar Pago">
+                                        <i class="fa-solid fa-cash-register"></i>
+                                    </a>
+                                    <a href="{{ url_for('finanzas.editar_gasto', id=m.id) }}"
+                                        class="btn btn-warning" title="Editar Gasto">
+                                        <i class="fa-solid fa-edit"></i>
+                                    </a>
+                                    {% endif %}
                                 </div>
+                                {% if m.estado == 'PENDIENTE' and m.tipo == 'EGRESO' %}
+                                <form method="POST" action="{{ url_for('finanzas.eliminar_gasto', id=m.id) }}"
+                                      class="d-inline ms-2"
+                                      onsubmit="return confirm('¿Está seguro de eliminar este gasto pendiente?');">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Eliminar Gasto">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

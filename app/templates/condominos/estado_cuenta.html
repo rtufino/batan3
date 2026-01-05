@@ -118,28 +118,28 @@
                                             <a href="{{ url_for('condominos.reimprimir_aviso', movimiento_id=m.id) }}" class="btn btn-secondary" title="Ver PDF Aviso" target="_blank">
                                                 <i class="fa-solid fa-file-pdf"></i>
                                             </a>
-                                            <form method="POST" action="{{ url_for('condominos.enviar_aviso_email', movimiento_id=m.id) }}" style="display: inline;">
-                                                <button type="submit" class="btn btn-primary btn-sm" title="Enviar Aviso por Email" onclick="return confirm('¿Enviar aviso de cobro por email?')">
-                                                    <i class="fa-solid fa-envelope"></i>
-                                                </button>
-                                            </form>
-                                            <form method="POST" action="{{ url_for('condominos.eliminar_cargo', movimiento_id=m.id) }}" style="display: inline;">
-                                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Cargo" onclick="return confirm('¿Está seguro de eliminar este cargo? Esta acción no se puede deshacer.')">
-                                                    <i class="fa-solid fa-trash"></i>
-                                                </button>
-                                            </form>
                                         </div>
+                                        <form method="POST" action="{{ url_for('condominos.enviar_aviso_email', movimiento_id=m.id) }}" class="d-inline ms-2">
+                                            <button type="submit" class="btn btn-sm btn-primary" title="Enviar Aviso por Email" onclick="return confirm('¿Enviar aviso de cobro por email?')">
+                                                <i class="fa-solid fa-envelope"></i>
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('condominos.eliminar_cargo', movimiento_id=m.id) }}" class="d-inline ms-2">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Eliminar Cargo" onclick="return confirm('¿Está seguro de eliminar este cargo? Esta acción no se puede deshacer.')">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
                                     {% else %}
                                         <div class="btn-group btn-group-sm" role="group">
                                             <a href="{{ url_for('finanzas.descargar_recibo', id=m.id) }}" class="btn btn-secondary" title="Ver PDF Recibo" target="_blank">
                                                 <i class="fa-solid fa-file-pdf"></i>
                                             </a>
-                                            <form method="POST" action="{{ url_for('condominos.enviar_recibo_email', movimiento_id=m.id) }}" style="display: inline;">
-                                                <button type="submit" class="btn btn-success btn-sm" title="Reenviar Recibo por Email" onclick="return confirm('¿Reenviar recibo de pago por email?')">
-                                                    <i class="fa-solid fa-envelope"></i>
-                                                </button>
-                                            </form>
                                         </div>
+                                        <form method="POST" action="{{ url_for('condominos.enviar_recibo_email', movimiento_id=m.id) }}" class="d-inline ms-2">
+                                            <button type="submit" class="btn btn-sm btn-success" title="Reenviar Recibo por Email" onclick="return confirm('¿Reenviar recibo de pago por email?')">
+                                                <i class="fa-solid fa-envelope"></i>
+                                            </button>
+                                        </form>
                                     {% endif %}
                                 </td>
                             </tr>

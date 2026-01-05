@@ -245,3 +245,15 @@ class ParametroForm(FlaskForm):
         (False, 'No')
     ], coerce=lambda x: str(x) == 'True', default=True)
     submit = SubmitField('Guardar Parámetro')
+
+class EditarGastoForm(FlaskForm):
+    """Formulario para editar un gasto pendiente"""
+    proveedor_id = SelectField('Proveedor / Beneficiario', validators=[DataRequired()], coerce=int)
+    rubro_id = SelectField('Concepto (Rubro)', validators=[DataRequired()], coerce=int)
+    cuenta_id = SelectField('Cuenta de Origen', validators=[DataRequired()], coerce=int)
+    
+    monto = DecimalField('Monto ($)', validators=[DataRequired(), NumberRange(min=0.01)], places=2)
+    fecha_emision = DateField('Fecha de Emisión', validators=[DataRequired()], format='%Y-%m-%d')
+    descripcion = StringField('Detalle / Notas', validators=[Optional()])
+    
+    submit = SubmitField('Actualizar Gasto')
