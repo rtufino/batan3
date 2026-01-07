@@ -1,4 +1,6 @@
 from flask import Blueprint, render_template
+
+from app.charts.dashboard_charts import grafico_ingresos_egresos_6_meses
 from app.models import Movimiento, Cuenta, Equipo
 from app.extensions import db
 from sqlalchemy import func
@@ -9,6 +11,7 @@ main_bp = Blueprint('main', __name__)
 def dashboard():
     # --- 1. TESORERÍA (Lectura directa súper rápida) ---
     cuentas = Cuenta.query.all()
+    grafico = grafico_ingresos_egresos_6_meses()
     resumen_cuentas = []
     saldo_liquido_total = 0.0
 
@@ -46,6 +49,7 @@ def dashboard():
         'deuda_por_pagar': deuda_por_pagar,
         'por_cobrar': por_cobrar,
         'balance_real': balance_patrimonial,
-        'alertas_mantenimiento': alertas_mantenimiento
+        'alertas_mantenimiento': alertas_mantenimiento,
+        'grafico': grafico
     }
     return render_template('admin/dashboard.html', **context)
