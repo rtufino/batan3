@@ -1,7 +1,13 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.extensions import db
-from app.models import Rubro, Movimiento, Proveedor, Cuenta, Parametro
-from app.forms import RubroForm, ProveedorForm, CuentaForm, ParametroForm
+from app.models import (
+    Rubro, Movimiento, Proveedor, Cuenta, Parametro,
+    GastoRecurrente  # Agregar el nuevo modelo
+)
+from app.forms import (
+    RubroForm, ProveedorForm, CuentaForm, ParametroForm,
+    GastoRecurrenteForm  # Agregar el nuevo formulario
+)
 from sqlalchemy import func
 
 config_bp = Blueprint('config', __name__, url_prefix='/config')
@@ -516,3 +522,100 @@ def eliminar_parametro(id):
         flash(f'Error al eliminar parámetro: {str(e)}', 'danger')
     
     return redirect(url_for('config.lista_parametros'))
+
+# ==================== CRUD GASTOS RECURRENTES ====================
+
+@config_bp.route('/gastos-recurrentes')
+def lista_gastos_recurrentes():
+    """Lista todos los gastos recurrentes"""
+    from app.models import GastoRecurrente
+    gastos = GastoRecurrente.query.order_by(GastoRecurrente.descripcion).all()
+    return render_template('config/gastos_recurrentes.html', gastos=gastos)
+
+@config_bp.route('/gastos-recurrentes/nuevo', methods=['GET', 'POST'])
+def nuevo_gasto_recurrente():
+    """Crear un nuevo gasto recurrente"""
+    from app.models import GastoRecurrente
+    from app.forms import GastoRecurrenteForm
+    
+    form = GastoRecurrenteForm()
+    
+    if form.validate_on_submit():
+        # Verificar que no exista un gasto con la misma descripción
+        existe = GastoRecurrente.query.filter_by(descripcion=form.descripcion.data).first()
+        if existe:
+            flash(f'Ya existe un gasto recurrente con la descripción "{form.descripcion.data}"', 'warning')
+            return render_template('config/gasto_recurrente_form.html', form=form, titulo='Nuevo Gasto Recurrente')
+        
+        nuevo_gasto = GastoRecurrente(
+            descripcion=form.descripcion.data,
+            tipo_periodicidad=form.tipo_periodicidad.data,
+            meses_base=form.meses_base.data,
+            monto=form.monto.data,
+            notas=form.notas.data
+        )
+        
+        try:
+            db.session.add(nuevo_gasto)
+            db.session.commit()
+            flash(f'Gasto Recurrente "{nuevo_gasto.descripcion}" creado exitosamente', 'success')
+            return redirect(url_for('config.lista_gastos_recurrentes'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear gasto recurrente: {str(e)}', 'danger')
+    
+    return render_template('config/gasto_recurrente_form.html', form=form, titulo='Nuevo Gasto Recurrente')
+
+@config_bp.route('/gastos-recurrentes/editar/<int:id>', methods=['GET', 'POST'])
+def editar_gasto_recurrente(id):
+    """Editar un gasto recurrente existente"""
+    from app.models import GastoRecurrente
+    from app.forms import GastoRecurrenteForm
+    
+    gasto = GastoRecurrente.query.get_or_404(id)
+    form = GastoRecurrenteForm(obj=gasto)
+    
+    if form.validate_on_submit():
+        # Verificar que no exista otro gasto con la misma descripción
+        existe = GastoRecurrente.query.filter(
+            GastoRecurrente.descripcion == form.descripcion.data,
+            GastoRecurrente.id != id
+        ).first()
+        
+        if existe:
+            flash(f'Ya existe otro gasto recurrente con la descripción "{form.descripcion.data}"', 'warning')
+            return render_template('config/gasto_recurrente_form.html', form=form, titulo='Editar Gasto Recurrente', gasto=gasto)
+        
+        gasto.descripcion = form.descripcion.data
+        gasto.tipo_periodicidad = form.tipo_periodicidad.data
+        gasto.meses_base = form.meses_base.data
+        gasto.monto = form.monto.data
+        gasto.notas = form.notas.data
+        
+        try:
+            db.session.commit()
+            flash(f'Gasto Recurrente "{gasto.descripcion}" actualizado exitosamente', 'success')
+            return redirect(url_for('config.lista_gastos_recurrentes'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar gasto recurrente: {str(e)}', 'danger')
+    
+    return render_template('config/gasto_recurrente_form.html', form=form, titulo='Editar Gasto Recurrente', gasto=gasto)
+
+@config_bp.route('/gastos-recurrentes/eliminar/<int:id>', methods=['POST'])
+def eliminar_gasto_recurrente(id):
+    """Eliminar un gasto recurrente"""
+    from app.models import GastoRecurrente
+    
+    gasto = GastoRecurrente.query.get_or_404(id)
+    
+    try:
+        descripcion_gasto = gasto.descripcion
+        db.session.delete(gasto)
+        db.session.commit()
+        flash(f'Gasto Recurrente "{descripcion_gasto}" eliminado exitosamente', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar gasto recurrente: {str(e)}', 'danger')
+    
+    return redirect(url_for('config.lista_gastos_recurrentes'))

@@ -1,6 +1,6 @@
 from datetime import datetime
 from flask_wtf import FlaskForm
-from wtforms import StringField, DecimalField, DateField, SelectField, SubmitField, TextAreaField
+from wtforms import StringField, DecimalField, DateField, SelectField, SubmitField, TextAreaField, BooleanField
 from flask_wtf.file import FileField, FileAllowed
 from wtforms.validators import DataRequired, NumberRange, Optional, Email
 from app.models import Proveedor
@@ -257,3 +257,24 @@ class EditarGastoForm(FlaskForm):
     descripcion = StringField('Detalle / Notas', validators=[Optional()])
     
     submit = SubmitField('Actualizar Gasto')
+
+class GastoRecurrenteForm(FlaskForm):
+    """
+    Formulario para gestionar gastos recurrentes del edificio
+    """
+    descripcion = StringField('Descripción del Gasto', validators=[DataRequired()])
+    
+    tipo_periodicidad = SelectField('Tipo de Periodicidad', choices=[
+        ('FIJO', 'Un mes específico'),
+        ('RECURRENTE', 'Meses específicos separados por coma'),
+        ('RANGO', 'Rango de meses')
+    ], validators=[DataRequired()])
+    
+    meses_base = StringField('Meses de Pago', validators=[DataRequired()],
+        description='FIJO: Un número (ej: 5), RECURRENTE: Números separados por coma (ej: 1,3,7), RANGO: Rango de meses (ej: 1-6)')
+    
+    monto = DecimalField('Monto Estimado ($)', validators=[Optional(), NumberRange(min=0)], places=2)
+    
+    notas = TextAreaField('Notas Adicionales', validators=[Optional()])
+    
+    submit = SubmitField('Guardar Gasto Recurrente')

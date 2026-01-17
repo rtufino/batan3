@@ -119,6 +119,31 @@
             </div>
         </div>
     </div>
+
+    <!-- Card Gastos Recurrentes -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100 hover-card">
+            <div class="card-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fa-solid fa-calendar-check fa-4x text-danger"></i>
+                </div>
+                <h4 class="card-title mb-3">Gastos Recurrentes</h4>
+                <p class="card-text text-muted mb-4">
+                    Gestiona los gastos periódicos y fijos del edificio.
+                    Configura pagos mensuales, trimestrales, anuales y otros.
+                </p>
+                <a href="{{ url_for('config.lista_gastos_recurrentes') }}" class="btn btn-danger btn-lg">
+                    <i class="fa-solid fa-arrow-right"></i> Gestionar Gastos
+                </a>
+            </div>
+            <div class="card-footer bg-light text-center">
+                <small class="text-muted">
+                    <i class="fa-solid fa-info-circle"></i>
+                    Ejemplos: Nómina, Servicios Públicos, Décimos
+                </small>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Información adicional -->

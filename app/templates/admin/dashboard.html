@@ -3,6 +3,45 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
+<!-- Botón de Gastos Recurrentes -->
+{% if gastos_recurrentes %}
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+    <button type="button" class="btn btn-danger btn-lg rounded-circle shadow" data-bs-toggle="modal" data-bs-target="#gastosRecurrentesModal">
+        <i class="fa-solid fa-calendar-check"></i>
+        <span class="badge bg-light text-danger position-absolute top-0 start-100 translate-middle">{{ gastos_recurrentes|length }}</span>
+    </button>
+</div>
+
+<!-- Modal de Gastos Recurrentes -->
+<div class="modal fade" id="gastosRecurrentesModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Gastos Recurrentes del Mes</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-group">
+                    {% for gasto in gastos_recurrentes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ gasto.descripcion }}
+                        <span class="badge bg-primary rounded-pill">
+                            ${{ "{:.2f}".format(gasto.monto or 0) }}
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <a href="{{ url_for('config.lista_gastos_recurrentes') }}" class="btn btn-secondary">
+                    Gestionar Gastos
+                </a>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 <div class="row mb-4">
     <div class="col-12">
         <h2 class="fw-bold text-secondary">Resumen Financiero</h2>
@@ -95,4 +134,11 @@
         </a>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% if gastos_recurrentes %}
+<script src="{{ url_for('static', filename='js/gastos_recurrentes.js') }}"></script>
+{% endif %}
 {% endblock %}

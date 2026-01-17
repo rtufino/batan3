@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template
-from app.models import Movimiento, Cuenta, Equipo
+from app.models import Movimiento, Cuenta, Equipo, GastoRecurrente
 from app.extensions import db
 from sqlalchemy import func
+from datetime import datetime
 
 main_bp = Blueprint('main', __name__)
 
@@ -39,10 +40,23 @@ def dashboard():
     # --- 5. OPERATIVO ---
     alertas_mantenimiento = Equipo.query.count()
 
+    # --- 6. GASTOS RECURRENTES ---
+    hoy = datetime.now()
+    gastos_recurrentes = GastoRecurrente.query.filter(
+        GastoRecurrente.tipo_periodicidad.in_(['RECURRENTE', 'FIJO'])
+    ).all()
+    
+    # Filtrar gastos del mes actual
+    gastos_mes_actual = [
+        gasto for gasto in gastos_recurrentes
+        if gasto.es_mes_de_pago(hoy.month)
+    ]
+
     context = {
         'titulo': 'Panel Financiero',
         'cuentas': resumen_cuentas,
         'saldo_disponible': saldo_liquido_total,
+        'gastos_recurrentes': gastos_mes_actual,
         'deuda_por_pagar': deuda_por_pagar,
         'por_cobrar': por_cobrar,
         'balance_real': balance_patrimonial,

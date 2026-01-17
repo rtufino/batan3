@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Gastos Recurrentes{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.index') }}">Configuración</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Gastos Recurrentes</li>
+    </ol>
+</nav>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2 class="mb-0"><i class="fa-solid fa-calendar-check"></i> Gastos Recurrentes</h2>
+        <p class="text-muted">Gestiona los gastos periódicos y fijos del edificio</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('config.nuevo_gasto_recurrente') }}" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Nuevo Gasto Recurrente
+        </a>
+    </div>
+</div>
+
+<!-- Gastos Recurrentes -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="fa-solid fa-calendar-check"></i> Lista de Gastos</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 25%;">Descripción</th>
+                    <th style="width: 15%;">Tipo</th>
+                    <th style="width: 20%;">Meses Base</th>
+                    <th style="width: 10%;">Monto</th>
+                    <th class="text-center" style="width: 20%;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for gasto in gastos %}
+                <tr>
+                    <td>
+                        <strong>{{ gasto.descripcion }}</strong>
+                    </td>
+                    <td>
+                        {% if gasto.tipo_periodicidad == 'FIJO' %}
+                            <span class="badge bg-warning text-dark">Mes Específico</span>
+                        {% elif gasto.tipo_periodicidad == 'RECURRENTE' %}
+                            <span class="badge bg-primary">Meses Específicos</span>
+                        {% else %}
+                            <span class="badge bg-info">Rango de Meses</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">{{ gasto.meses_base }}</span>
+                    </td>
+                    <td>
+                        {% if gasto.monto %}
+                            <span class="badge bg-success">${{ "{:.2f}".format(gasto.monto) }}</span>
+                        {% else %}
+                            <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('config.editar_gasto_recurrente', id=gasto.id) }}" class="btn btn-warning" title="Editar">
+                                <i class="fa-solid fa-edit"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('config.eliminar_gasto_recurrente', id=gasto.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-danger" title="Eliminar" onclick="return confirm('¿Está seguro de eliminar este gasto recurrente?')">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4">
+    <strong><i class="fa-solid fa-info-circle"></i> Información:</strong>
+    <ul class="mb-0 mt-2">
+        <li>Los gastos recurrentes te ayudan a planificar pagos del edificio</li>
+        <li><strong>Tipos de Periodicidad:</strong>
+            <ul>
+                <li><strong>Mes Específico:</strong> Un único mes (ej: 5)</li>
+                <li><strong>Meses Específicos:</strong> Lista de meses separados por coma (ej: 1,3,7)</li>
+                <li><strong>Rango de Meses:</strong> Intervalo de meses (ej: 1-6)</li>
+            </ul>
+        </li>
+        <li>Puedes configurar los meses base para cada gasto recurrente</li>
+        <li>El sistema te ayudará a identificar qué gastos corresponden al mes actual</li>
+    </ul>
+</div>
+{% endblock %}

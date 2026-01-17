@@ -313,3 +313,127 @@ class Movimiento(db.Model):
     def __repr__(self):
         fecha_mostrar = self.fecha_pago if self.fecha_pago else self.fecha_emision
         return f'<{self.tipo} ${self.monto} - Emitido: {self.fecha_emision.date()} - Pagado: {fecha_mostrar.date() if self.fecha_pago else "PENDIENTE"}>'
+
+# --- 5. LISTA DE GASTOS RECURRENTES ---
+
+class GastoRecurrente(db.Model):
+    """
+    Gestiona los gastos recurrentes del edificio con una definición flexible de periodicidad
+    """
+    __tablename__ = 'gasto_recurrente'
+
+    # Tipos de periodicidad
+    TIPOS = {
+        'FIJO': 'Un mes específico',
+        'RECURRENTE': 'Meses específicos separados por coma',
+        'RANGO': 'Rango de meses'
+    }
+
+    id = db.Column(db.Integer, primary_key=True)
+    descripcion = db.Column(db.String(255), nullable=False)
+    
+    # Tipo de periodicidad: FIJO, RECURRENTE, RANGO
+    tipo_periodicidad = db.Column(db.String(20), nullable=False, default='FIJO')
+    
+    # Meses base según el tipo de periodicidad
+    # FIJO: Un número (ej: 5)
+    # RECURRENTE: Números separados por coma (ej: 1,3,7)
+    # RANGO: Rango de meses (ej: 1-6)
+    meses_base = db.Column(db.String(50), nullable=False)
+    
+    monto = db.Column(db.Float, nullable=True)
+    notas = db.Column(db.Text, nullable=True)
+    
+    # Fecha de creación para referencia
+    fecha_creacion = db.Column(db.DateTime, default=datetime.now)
+
+    def a_diccionario(self):
+        """
+        Convierte la instancia del modelo a un diccionario para serialización.
+        """
+        return {
+            'id': self.id,
+            'descripcion': self.descripcion,
+            'tipo_periodicidad': self.tipo_periodicidad,
+            'meses_base': self.meses_base,
+            'monto': self.monto,
+            'notas': self.notas
+        }
+
+    def es_mes_de_pago(self, mes_actual):
+        """
+        Determina si el mes actual corresponde a un mes de pago según la periodicidad.
+        
+        :param mes_actual: Mes actual (1-12)
+        :return: Booleano indicando si es un mes de pago
+        """
+        # Convertir mes_actual a entero para comparaciones
+        mes_actual = int(mes_actual)
+
+        # FIJO: Comparación directa
+        if self.tipo_periodicidad == 'FIJO':
+            return mes_actual == int(self.meses_base)
+        
+        # RECURRENTE: Verificar si está en la lista de meses
+        elif self.tipo_periodicidad == 'RECURRENTE':
+            meses_lista = [int(m.strip()) for m in self.meses_base.split(',')]
+            return mes_actual in meses_lista
+        
+        # RANGO: Verificar si está dentro del rango
+        elif self.tipo_periodicidad == 'RANGO':
+            inicio, fin = map(int, self.meses_base.split('-'))
+            return inicio <= mes_actual <= fin
+        
+        return False
+
+    @classmethod
+    def crear_gastos_predeterminados(cls):
+        """
+        Método para crear gastos recurrentes predeterminados si no existen.
+        """
+        gastos_predeterminados = [
+            {
+                'descripcion': 'Nómina',
+                'tipo_periodicidad': 'RECURRENTE',
+                'meses_base': '1,7',
+                'monto': 0
+            },
+            {
+                'descripcion': 'Mantenimiento General',
+                'tipo_periodicidad': 'FIJO',
+                'meses_base': '1',
+                'monto': 0
+            },
+            {
+                'descripcion': 'Servicios Públicos',
+                'tipo_periodicidad': 'RANGO',
+                'meses_base': '1-6',
+                'monto': 0
+            },
+            {
+                'descripcion': 'Décimo Tercero',
+                'tipo_periodicidad': 'FIJO',
+                'meses_base': '12',
+                'monto': 0
+            },
+            {
+                'descripcion': 'Décimo Cuarto',
+                'tipo_periodicidad': 'FIJO',
+                'meses_base': '8',
+                'monto': 0
+            }
+        ]
+        
+        for gasto in gastos_predeterminados:
+            existente = cls.query.filter_by(descripcion=gasto['descripcion']).first()
+            if not existente:
+                nuevo_gasto = cls(**gasto)
+                db.session.add(nuevo_gasto)
+        
+        db.session.commit()
+
+    def __repr__(self):
+        """
+        Representación en cadena del modelo para depuración.
+        """
+        return f'<Gasto Recurrente {self.descripcion} - {self.tipo_periodicidad}: {self.meses_base}>'

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.index') }}">Configuración</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('config.lista_gastos_recurrentes') }}">Gastos Recurrentes</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ titulo }}</li>
+    </ol>
+</nav>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-0"><i class="fa-solid fa-calendar-check"></i> {{ titulo }}</h2>
+        <p class="text-muted">Configura los detalles del gasto recurrente</p>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="fa-solid fa-edit"></i> Detalles del Gasto</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.descripcion.label(class="form-label") }}
+                    {{ form.descripcion(class="form-control", placeholder="Ej: Nómina, Servicios Públicos") }}
+                    {% if form.descripcion.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.descripcion.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.tipo_periodicidad.label(class="form-label") }}
+                    {{ form.tipo_periodicidad(class="form-control", onchange="togglePeriodicidad()") }}
+                    {% if form.tipo_periodicidad.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.tipo_periodicidad.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-12">
+                    {{ form.meses_base.label(class="form-label") }}
+                    {{ form.meses_base(class="form-control", placeholder="Ej: 5 o 1,3,7 o 1-6") }}
+                    <small class="form-text text-muted">
+                        <i class="fa-solid fa-info-circle"></i> 
+                        FIJO: Un número (ej: 5)
+                        RECURRENTE: Números separados por coma (ej: 1,3,7)
+                        RANGO: Rango de meses (ej: 1-6)
+                    </small>
+                    {% if form.meses_base.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.meses_base.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.monto.label(class="form-label") }}
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        {{ form.monto(class="form-control", placeholder="Monto estimado") }}
+                    </div>
+                    {% if form.monto.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.monto.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.notas.label(class="form-label") }}
+                    {{ form.notas(class="form-control", rows="3", placeholder="Notas adicionales") }}
+                    {% if form.notas.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.notas.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    {{ form.submit(class="btn btn-primary") }}
+                    <a href="{{ url_for('config.lista_gastos_recurrentes') }}" class="btn btn-secondary ms-2">
+                        Cancelar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4">
+    <strong><i class="fa-solid fa-info-circle"></i> Información:</strong>
+    <ul class="mb-0 mt-2">
+        <li>Configura gastos que se repiten en meses específicos</li>
+        <li><strong>Tipos de Periodicidad:</strong>
+            <ul>
+                <li><strong>Fijo:</strong> Un mes específico (ej: 5)</li>
+                <li><strong>Recurrente:</strong> Meses separados por coma (ej: 1,3,7)</li>
+                <li><strong>Rango:</strong> Intervalo de meses (ej: 1-6)</li>
+            </ul>
+        </li>
+        <li>El monto es opcional y puede ser ajustado posteriormente</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function togglePeriodicidad() {
+        const tipoPeriodicidad = document.getElementById('tipo_periodicidad').value;
+        const mesesBaseInput = document.getElementById('meses_base');
+        const mesesBaseHelp = mesesBaseInput.nextElementSibling;
+        
+        switch(tipoPeriodicidad) {
+            case 'FIJO':
+                mesesBaseInput.placeholder = 'Ej: 5';
+                mesesBaseHelp.innerHTML = '<i class="fa-solid fa-info-circle"></i> Un número de mes (1-12)';
+                break;
+            case 'RECURRENTE':
+                mesesBaseInput.placeholder = 'Ej: 1,3,7';
+                mesesBaseHelp.innerHTML = '<i class="fa-solid fa-info-circle"></i> Números separados por coma (1-12)';
+                break;
+            case 'RANGO':
+                mesesBaseInput.placeholder = 'Ej: 1-6';
+                mesesBaseHelp.innerHTML = '<i class="fa-solid fa-info-circle"></i> Rango de meses (inicio-fin)';
+                break;
+        }
+    }
+    
+    // Llamar a la función al cargar la página
+    document.addEventListener('DOMContentLoaded', togglePeriodicidad);
+</script>
+{% endblock %}
