@@ -346,8 +346,85 @@ class GastoRecurrente(db.Model):
     
     # Fecha de creación para referencia
     fecha_creacion = db.Column(db.DateTime, default=datetime.now)
+    
+    # Seguimiento de pagos
+    pagado = db.Column(db.Boolean, default=False)
 
     def a_diccionario(self):
+        """
+        Convierte la instancia del modelo a un diccionario para serialización.
+        """
+        return {
+            'id': self.id,
+            'descripcion': self.descripcion,
+            'tipo_periodicidad': self.tipo_periodicidad,
+            'meses_base': self.meses_base,
+            'monto': self.monto,
+            'notas': self.notas,
+            'pagado': self.pagado
+        }
+
+    def marcar_como_pagado(self, mes_actual):
+        """
+        Marca el gasto como pagado.
+        
+        :param mes_actual: Mes actual (1-12)
+        """
+        # Validar que el mes sea un mes de pago válido
+        if not self.es_mes_de_pago(mes_actual):
+            raise ValueError(f"El mes {mes_actual} no es un mes de pago válido para este gasto")
+
+        self.pagado = True
+
+    def reiniciar_pago(self):
+        """
+        Reinicia el estado de pago.
+        """
+        self.pagado = False
+
+    @classmethod
+    def reiniciar_pagos_mensuales(cls, mes_actual):
+        """
+        Reinicia los pagos de todos los gastos recurrentes al inicio de un nuevo mes.
+        
+        :param mes_actual: Mes actual (1-12)
+        """
+        # Obtener todos los gastos que corresponden al mes actual
+        gastos_del_mes = cls.query.all()
+        
+        for gasto in gastos_del_mes:
+            # Solo reiniciar si el gasto corresponde al mes actual
+            if gasto.es_mes_de_pago(mes_actual):
+                gasto.pagado = False
+        
+        db.session.commit()
+
+    def es_mes_de_pago(self, mes_actual):
+        """
+        Determina si el mes actual corresponde a un mes de pago según la periodicidad.
+        
+        :param mes_actual: Mes actual (1-12)
+        :return: Booleano indicando si es un mes de pago
+        """
+        # Convertir mes_actual a entero para comparaciones
+        mes_actual = int(mes_actual)
+
+        # FIJO: Comparación directa
+        if self.tipo_periodicidad == 'FIJO':
+            return mes_actual == int(self.meses_base)
+        
+        # RECURRENTE: Verificar si está en la lista de meses
+        elif self.tipo_periodicidad == 'RECURRENTE':
+            meses_lista = [int(m.strip()) for m in self.meses_base.split(',')]
+            return mes_actual in meses_lista
+        
+        # RANGO: Verificar si está dentro del rango
+        elif self.tipo_periodicidad == 'RANGO':
+            # Manejar rangos como '1-12', '1-6', '7-12'
+            inicio, fin = map(int, self.meses_base.split('-'))
+            return inicio <= mes_actual <= fin
+        
+        return False
         """
         Convierte la instancia del modelo a un diccionario para serialización.
         """

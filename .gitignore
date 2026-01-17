@@ -12,3 +12,4 @@ deployment
 .devcontainer
 .vscode
 seed.py
+tests/

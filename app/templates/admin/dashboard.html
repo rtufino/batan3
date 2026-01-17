@@ -16,28 +16,45 @@
 <div class="modal fade" id="gastosRecurrentesModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Gastos Recurrentes del Mes</h5>
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Recordatorio Gastos Recurrentes del Mes</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <ul class="list-group">
+                <div class="list-group">
                     {% for gasto in gastos_recurrentes %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ gasto.descripcion }}
-                        <span class="badge bg-primary rounded-pill">
-                            ${{ "{:.2f}".format(gasto.monto or 0) }}
-                        </span>
-                    </li>
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center
+                        {% if gasto.pagado %}list-group-item-success{% endif %}"
+                        data-gasto-id="{{ gasto.id }}">
+                        <div class="form-check">
+                            <input class="form-check-input gasto-checkbox"
+                                   type="checkbox"
+                                   id="gasto-{{ gasto.id }}"
+                                   {% if gasto.pagado %}checked{% endif %}>
+                            <label class="form-check-label" for="gasto-{{ gasto.id }}">
+                                {{ gasto.descripcion }}
+                                <small class="text-muted d-block">
+                                    ({{ gasto.tipo_periodicidad }}: {{ gasto.meses_base }})
+                                </small>
+                            </label>
+                        </div>
+                        <div>
+                            {% if gasto.monto %}
+                            <span class="badge bg-primary rounded-pill">${{ "{:.2f}".format(gasto.monto) }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
                     {% endfor %}
-                </ul>
+                </div>
             </div>
+            <!--
             <div class="modal-footer">
-                <a href="{{ url_for('config.lista_gastos_recurrentes') }}" class="btn btn-secondary">
+                 <a href="{{ url_for('config.lista_gastos_recurrentes') }}" class="btn btn-secondary">
                     Gestionar Gastos
-                </a>
-                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cerrar</button>
+                </a> 
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
+            -->
         </div>
     </div>
 </div>

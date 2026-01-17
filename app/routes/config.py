@@ -619,3 +619,95 @@ def eliminar_gasto_recurrente(id):
         flash(f'Error al eliminar gasto recurrente: {str(e)}', 'danger')
     
     return redirect(url_for('config.lista_gastos_recurrentes'))
+
+def reiniciar_gastos_recurrentes_mensualmente():
+   """
+   Tarea programada para reiniciar los gastos recurrentes al inicio de cada mes.
+   Esta función debe ser llamada por un sistema de tareas programadas como Celery o APScheduler.
+   """
+   from datetime import datetime
+   from app.extensions import db
+   from app.models import GastoRecurrente
+
+   # Obtener el mes actual
+   mes_actual = datetime.now().month
+
+   try:
+       # Reiniciar pagos de gastos recurrentes
+       GastoRecurrente.reiniciar_pagos_mensuales(mes_actual)
+       
+       # Registrar log o notificación si es necesario
+       print(f"Gastos recurrentes reiniciados para el mes {mes_actual}")
+   except Exception as e:
+       # Manejar cualquier error durante el reinicio
+       print(f"Error al reiniciar gastos recurrentes: {str(e)}")
+       # Opcional: enviar notificación de error
+
+@config_bp.route('/gastos-recurrentes/marcar/<int:id>', methods=['POST'])
+def marcar_gasto_recurrente(id):
+    """
+    Marcar o desmarcar un gasto recurrente como pagado.
+    
+    :param id: ID del gasto recurrente
+    :return: Respuesta JSON con el estado de la operación
+    """
+    from flask import jsonify, request
+    
+    # Obtener el gasto recurrente
+    gasto = GastoRecurrente.query.get_or_404(id)
+    
+    try:
+        # Obtener el estado del checkbox del request
+        pagado = request.form.get('pagado', 'false').lower() == 'true'
+        
+        # Actualizar directamente el estado de pago
+        gasto.pagado = pagado
+        
+        # Guardar cambios
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Gasto "{gasto.descripcion}" {"marcado" if pagado else "desmarcado"} exitosamente',
+            'pagado': gasto.pagado
+        }), 200
+    
+    except Exception as e:
+        # Revertir cambios en caso de error
+        db.session.rollback()
+        
+        return jsonify({
+            'success': False,
+            'message': f'Error al marcar gasto: {str(e)}'
+        }), 500
+
+@config_bp.route('/gastos-recurrentes/reiniciar-mensual', methods=['POST'])
+def reiniciar_gastos_recurrentes():
+   """
+   Reiniciar los gastos recurrentes al inicio de un nuevo mes.
+   
+   :return: Respuesta JSON con el estado de la operación
+   """
+   from flask import jsonify
+   from datetime import datetime
+   
+   try:
+       # Obtener el mes actual
+       mes_actual = datetime.now().month
+       
+       # Reiniciar pagos de gastos recurrentes
+       GastoRecurrente.reiniciar_pagos_mensuales(mes_actual)
+       
+       return jsonify({
+           'success': True,
+           'message': f'Gastos recurrentes reiniciados para el mes {mes_actual}'
+       }), 200
+   
+   except Exception as e:
+       # Revertir cambios en caso de error
+       db.session.rollback()
+       
+       return jsonify({
+           'success': False,
+           'message': f'Error al reiniciar gastos recurrentes: {str(e)}'
+       }), 500

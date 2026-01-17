@@ -42,9 +42,8 @@ def dashboard():
 
     # --- 6. GASTOS RECURRENTES ---
     hoy = datetime.now()
-    gastos_recurrentes = GastoRecurrente.query.filter(
-        GastoRecurrente.tipo_periodicidad.in_(['RECURRENTE', 'FIJO'])
-    ).all()
+    # Obtener todos los gastos recurrentes, incluyendo RANGO
+    gastos_recurrentes = GastoRecurrente.query.all()
     
     # Filtrar gastos del mes actual
     gastos_mes_actual = [
