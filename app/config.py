@@ -20,16 +20,30 @@ class Config:
     def get_compilation_code(cls):
         # Primero intentamos obtener el hash de git
         try:
+            # Intentar obtener el hash de git
             git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], 
                                                cwd=project_root, 
                                                stderr=subprocess.DEVNULL).decode('ascii').strip()
         except (subprocess.CalledProcessError, FileNotFoundError):
-            # Si no se puede obtener el hash de git, usamos una marca de tiempo de despliegue
-            git_hash = datetime.now().strftime('%Y%m%d%H%M')
+            git_hash = None
         
-        # Formato: [ENTORNO]-[HASH/TIMESTAMP]
+        # Obtener el entorno
         env = os.environ.get('FLASK_ENV', 'development').upper()
-        return f"{env} : {git_hash}"
+        
+        # Si estamos en producción y no hay hash de git, usar información de despliegue
+        if env == 'PRODUCTION':
+            if git_hash:
+                return f"PROD: {git_hash}"
+            else:
+                # Usar una combinación de fecha y hora para producción
+                deployment_info = datetime.now().strftime('%Y%m%d%H%M')
+                return f"PROD: {deployment_info}"
+        
+        # Para desarrollo, mantener el formato anterior
+        if git_hash:
+            return f"DEV: {git_hash}"
+        else:
+            return f"DEV: {datetime.now().strftime('%Y%m%d%H%M')}"
     
     # Código de compilación
     COMPILATION_CODE = os.environ.get('COMPILATION_CODE') or get_compilation_code.__func__(None)
