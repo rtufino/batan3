@@ -1,4 +1,6 @@
 import os
+import subprocess
+from datetime import datetime
 from dotenv import load_dotenv
 
 # Determinamos la ruta base del proyecto (un nivel arriba de app/)
@@ -9,6 +11,28 @@ load_dotenv(os.path.join(project_root, '.env'))
 class Config:
     # Llave secreta para firmar cookies y proteger contra CSRF
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-batan3-segura'
+    
+    # Determinar el entorno de ejecución
+    ENV = os.environ.get('FLASK_ENV', 'development')
+    
+    # Generar código de compilación
+    @classmethod
+    def get_compilation_code(cls):
+        # Primero intentamos obtener el hash de git
+        try:
+            git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], 
+                                               cwd=project_root, 
+                                               stderr=subprocess.DEVNULL).decode('ascii').strip()
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # Si no se puede obtener el hash de git, usamos una marca de tiempo de despliegue
+            git_hash = datetime.now().strftime('%Y%m%d%H%M')
+        
+        # Formato: [ENTORNO]-[HASH/TIMESTAMP]
+        env = os.environ.get('FLASK_ENV', 'development').upper()
+        return f"{env} : {git_hash}"
+    
+    # Código de compilación
+    COMPILATION_CODE = os.environ.get('COMPILATION_CODE') or get_compilation_code.__func__(None)
     
     # Configuración de Base de Datos
     # Prioridad: 1. Variable de Entorno (Prod) -> 2. SQLite local (Dev)
