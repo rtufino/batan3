@@ -19,12 +19,38 @@ class Config:
     @classmethod
     def get_compilation_code(cls):
         # Primero intentamos obtener el hash de git
+        git_hash = None
         try:
-            # Intentar obtener el hash de git
-            git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], 
-                                               cwd=project_root, 
-                                               stderr=subprocess.DEVNULL).decode('ascii').strip()
-        except (subprocess.CalledProcessError, FileNotFoundError):
+            # Intentar obtener el hash de git usando diferentes métodos
+            git_methods = [
+                # Método 1: Usando subprocess directamente
+                lambda: subprocess.check_output(
+                    ['git', 'rev-parse', '--short', 'HEAD'], 
+                    cwd=project_root, 
+                    stderr=subprocess.DEVNULL
+                ).decode('ascii').strip(),
+                
+                # Método 2: Usando shell=True
+                lambda: subprocess.check_output(
+                    'git rev-parse --short HEAD', 
+                    cwd=project_root, 
+                    shell=True, 
+                    stderr=subprocess.DEVNULL
+                ).decode('ascii').strip(),
+                
+                # Método 3: Usando os.popen
+                lambda: os.popen('git rev-parse --short HEAD').read().strip()
+            ]
+            
+            # Probar cada método hasta que uno funcione
+            for method in git_methods:
+                try:
+                    git_hash = method()
+                    if git_hash:
+                        break
+                except Exception:
+                    continue
+        except Exception:
             git_hash = None
         
         # Obtener el entorno
