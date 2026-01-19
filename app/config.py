@@ -16,63 +16,29 @@ class Config:
     ENV = os.environ.get('FLASK_ENV', 'development')
     
     # Generar código de compilación
-    @classmethod
-    def get_compilation_code(cls):
-        # Primero intentamos obtener el hash de git
-        git_hash = None
+    @staticmethod
+    def get_compilation_code():
+        # Obtener el entorno de ejecución
+        env = os.environ.get('FLASK_ENV', 'development').lower()
+        
+        # Para producción, usar el código definido manualmente
+        if env == 'production':
+            return os.environ.get('PRODUCTION_COMPILATION_CODE', 'PROD-NO-DEFINIDO')
+        
+        # Para desarrollo, intentar obtener el hash de git
         try:
-            # Intentar obtener el hash de git usando diferentes métodos
-            git_methods = [
-                # Método 1: Usando subprocess directamente
-                lambda: subprocess.check_output(
-                    ['git', 'rev-parse', '--short', 'HEAD'], 
-                    cwd=project_root, 
-                    stderr=subprocess.DEVNULL
-                ).decode('ascii').strip(),
-                
-                # Método 2: Usando shell=True
-                lambda: subprocess.check_output(
-                    'git rev-parse --short HEAD', 
-                    cwd=project_root, 
-                    shell=True, 
-                    stderr=subprocess.DEVNULL
-                ).decode('ascii').strip(),
-                
-                # Método 3: Usando os.popen
-                lambda: os.popen('git rev-parse --short HEAD').read().strip()
-            ]
-            
-            # Probar cada método hasta que uno funcione
-            for method in git_methods:
-                try:
-                    git_hash = method()
-                    if git_hash:
-                        break
-                except Exception:
-                    continue
-        except Exception:
-            git_hash = None
-        
-        # Obtener el entorno
-        env = os.environ.get('FLASK_ENV', 'development').upper()
-        
-        # Si estamos en producción y no hay hash de git, usar información de despliegue
-        if env == 'PRODUCTION':
-            if git_hash:
-                return f"PROD: {git_hash}"
-            else:
-                # Usar una combinación de fecha y hora para producción
-                deployment_info = datetime.now().strftime('%Y%m%d%H%M')
-                return f"PROD: {deployment_info}"
-        
-        # Para desarrollo, mantener el formato anterior
-        if git_hash:
+            git_hash = subprocess.check_output(
+                ['git', 'rev-parse', '--short', 'HEAD'], 
+                cwd=project_root, 
+                stderr=subprocess.DEVNULL
+            ).decode('ascii').strip()
             return f"DEV: {git_hash}"
-        else:
+        except Exception:
+            # Fallback para desarrollo si no se puede obtener el hash de git
             return f"DEV: {datetime.now().strftime('%Y%m%d%H%M')}"
     
     # Código de compilación
-    COMPILATION_CODE = os.environ.get('COMPILATION_CODE') or get_compilation_code.__func__(None)
+    COMPILATION_CODE = os.environ.get('COMPILATION_CODE') or get_compilation_code()
     
     # Configuración de Base de Datos
     # Prioridad: 1. Variable de Entorno (Prod) -> 2. SQLite local (Dev)
